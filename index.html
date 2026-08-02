@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgentZone — annonces entreprises &amp; agents commerciaux</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap');
+
+  :root{
+    --bg:#F6F6F2;
+    --surface:#FFFFFF;
+    --surface-2:#EFEEE8;
+    --ink:#14171C;
+    --ink-soft:#666B72;
+    --border:#E4E3DC;
+    --accent:#FF5A33;
+    --accent-soft:#FFE7DC;
+    --accent-ink:#B23A16;
+    --teal:#0F7A6A;
+    --teal-soft:#DFF3EE;
+    --gold:#B08327;
+    --gold-soft:#F6EBD2;
+    --radius:14px;
+    --radius-sm:9px;
+    --shadow: 0 1px 2px rgba(20,20,20,.05), 0 10px 28px rgba(20,20,20,.06);
+    --shadow-sm: 0 1px 2px rgba(20,20,20,.06);
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{ background:var(--bg); color:var(--ink); font-family:'Inter',sans-serif; -webkit-font-smoothing:antialiased; }
+  .display{ font-family:'Sora',sans-serif; }
+  .mono{ font-family:'IBM Plex Mono',monospace; }
+  a{ color:inherit; text-decoration:none; }
+  button{ font-family:inherit; }
+
+  .shell{ max-width:1040px; margin:0 auto; padding:0 22px; }
+
+  header.top{ position:sticky; top:0; z-index:30; background:rgba(246,246,242,.9); backdrop-filter:blur(8px); border-bottom:1px solid var(--border); }
+  .top-inner{ display:flex; align-items:center; justify-content:space-between; padding:16px 0; gap:14px; flex-wrap:wrap; }
+  .brand{ display:flex; align-items:center; gap:10px; cursor:pointer; }
+  .brand-mark{ width:34px; height:34px; flex-shrink:0; }
+  .brand-text{ display:flex; flex-direction:column; line-height:1.05; }
+  .brand-text b{ font-family:'Sora',sans-serif; font-size:18px; font-weight:700; letter-spacing:-0.01em; }
+  .brand-text span{ font-size:11px; color:var(--ink-soft); margin-top:2px; }
+  nav{ display:flex; align-items:center; gap:6px; }
+  .navlink{ font-size:13.5px; font-weight:500; color:var(--ink-soft); padding:9px 14px; border-radius:999px; cursor:pointer; transition:.15s ease; }
+  .navlink:hover{ color:var(--ink); background:var(--surface-2); }
+  .navlink.active{ color:var(--ink); background:var(--surface-2); }
+  .navlink.cta{ background:var(--ink); color:#fff; padding:10px 18px; }
+  .navlink.cta:hover{ background:#000; }
+
+  .btn{ display:inline-flex; align-items:center; gap:8px; justify-content:center; font-size:13.5px; font-weight:600; padding:12px 20px; border-radius:999px; border:none; background:var(--ink); color:#fff; cursor:pointer; transition:.15s ease; }
+  .btn:hover{ background:#000; transform:translateY(-1px); }
+  .btn.outline{ background:transparent; color:var(--ink); border:1.5px solid var(--border); }
+  .btn.outline:hover{ background:var(--surface-2); border-color:var(--ink-soft); }
+  .btn.accent{ background:var(--accent); }
+  .btn.accent:hover{ background:#E64A24; }
+  .btn:disabled{ opacity:.5; cursor:not-allowed; transform:none; }
+  .btn.sm{ padding:9px 15px; font-size:12.5px; }
+
+  input,select,textarea{ font-family:'Inter',sans-serif; font-size:14px; padding:11px 13px; border:1.5px solid var(--border); border-radius:var(--radius-sm); background:var(--surface); outline:none; color:var(--ink); width:100%; }
+  input:focus,select:focus,textarea:focus{ border-color:var(--ink); }
+  textarea{ resize:vertical; min-height:110px; font-family:'Inter',sans-serif; }
+
+  .pill{ display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:600; padding:5px 11px; border-radius:999px; letter-spacing:.01em; }
+  .pill.entreprise{ background:var(--accent-soft); color:var(--accent-ink); }
+  .pill.agent{ background:var(--teal-soft); color:var(--teal); }
+  .pill.neutral{ background:var(--surface-2); color:var(--ink-soft); font-weight:500; }
+  .pill.warn{ background:var(--gold-soft); color:var(--gold); }
+
+  .hero{ padding:64px 0 44px; }
+  .hero-top{ display:flex; align-items:center; gap:14px; margin-bottom:22px; }
+  .connector{ width:64px; height:22px; flex-shrink:0; }
+  .hero h1{ font-family:'Sora',sans-serif; font-size:42px; font-weight:700; line-height:1.12; margin:0 0 16px; letter-spacing:-0.015em; max-width:640px; }
+  .hero p.lead{ font-size:16.5px; color:var(--ink-soft); max-width:520px; margin:0 0 32px; line-height:1.6; }
+
+  .pitch-row{ display:flex; gap:14px; flex-wrap:wrap; margin-bottom:36px; }
+  .pitch-card{ flex:1; min-width:230px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:22px; cursor:pointer; transition:.18s ease; box-shadow:var(--shadow-sm); }
+  .pitch-card:hover{ box-shadow:var(--shadow); transform:translateY(-2px); border-color:#D9D8CF; }
+  .pitch-card .ic{ width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; margin-bottom:14px; }
+  .pitch-card.a .ic{ background:var(--accent-soft); color:var(--accent-ink); }
+  .pitch-card.b .ic{ background:var(--teal-soft); color:var(--teal); }
+  .pitch-card h3{ margin:0 0 5px; font-size:16px; font-family:'Sora',sans-serif; }
+  .pitch-card p{ margin:0; font-size:13.5px; color:var(--ink-soft); line-height:1.5; }
+  .price-tag{ font-size:12px; font-weight:700; color:var(--ink); margin-top:10px; }
+
+  .search-bar{ display:flex; gap:8px; background:var(--surface); border:1.5px solid var(--border); border-radius:999px; padding:6px 6px 6px 18px; box-shadow:var(--shadow-sm); flex-wrap:wrap; }
+  .search-bar input{ flex:1; min-width:160px; border:none; padding:10px 6px; }
+  .search-bar input:focus{ border:none; }
+
+  .section-head{ display:flex; align-items:baseline; justify-content:space-between; gap:14px; margin:52px 0 18px; flex-wrap:wrap; }
+  .section-head h2{ font-family:'Sora',sans-serif; font-size:21px; margin:0; letter-spacing:-.01em; }
+  .section-head p{ margin:4px 0 0; font-size:13.5px; color:var(--ink-soft); }
+  .link-more{ font-size:13px; font-weight:600; color:var(--ink); cursor:pointer; display:inline-flex; align-items:center; gap:5px; }
+  .link-more:hover{ color:var(--accent-ink); }
+
+  .map-wrap{ display:grid; grid-template-columns:230px 1fr; gap:0; border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow-sm); background:var(--surface); }
+  .map-filters{ padding:18px; border-right:1px solid var(--border); display:flex; flex-direction:column; gap:14px; background:var(--surface-2); }
+  .map-filters .f-label{ font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); font-weight:600; margin-bottom:6px; display:block; }
+  .map-filters select, .map-filters input{ font-size:13px; padding:9px 10px; }
+  #leaflet-map{ height:420px; width:100%; }
+  .map-empty{ padding:40px 20px; text-align:center; color:var(--ink-soft); font-size:13.5px; }
+  .map-legend{ font-size:12px; color:var(--ink-soft); padding:12px 18px; border-top:1px solid var(--border); display:flex; align-items:center; gap:8px; }
+  .leaflet-popup-content{ font-family:'Inter',sans-serif; font-size:13px; min-width:180px; }
+  .leaflet-popup-content b{ font-family:'Sora',sans-serif; font-size:13.5px; }
+  .pin{ width:16px; height:16px; border-radius:50% 50% 50% 0; background:var(--accent); border:2px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,.35); transform:rotate(-45deg); }
+
+  .ad-grid{ display:flex; flex-direction:column; gap:10px; }
+  .ad-card{ display:flex; align-items:center; gap:16px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px 18px; cursor:pointer; transition:.15s ease; }
+  .ad-card:hover{ box-shadow:var(--shadow); border-color:#D9D8CF; transform:translateY(-1px); }
+  .ad-card .ref{ font-size:10.5px; color:var(--ink-soft); margin-bottom:5px; letter-spacing:.02em; }
+  .ad-card h4{ margin:0 0 6px; font-size:15px; font-family:'Sora',sans-serif; font-weight:600; }
+  .ad-meta{ display:flex; gap:14px; flex-wrap:wrap; font-size:12.5px; color:var(--ink-soft); }
+  .ad-meta span{ display:inline-flex; align-items:center; gap:5px; }
+  .ad-card .tags{ margin-left:auto; display:flex; flex-direction:column; align-items:flex-end; gap:6px; flex-shrink:0; }
+
+  .empty{ padding:44px 20px; text-align:center; border:1.5px dashed var(--border); border-radius:var(--radius); color:var(--ink-soft); font-size:13.5px; }
+  .empty strong{ display:block; color:var(--ink); font-size:15.5px; margin-bottom:6px; font-family:'Sora',sans-serif; }
+
+  .filters-bar{ display:flex; gap:10px; flex-wrap:wrap; padding:16px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:22px; }
+  .filters-bar select, .filters-bar input{ flex:1; min-width:140px; }
+
+  .back-link{ display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:600; color:var(--ink-soft); cursor:pointer; margin:26px 0 14px; }
+  .back-link:hover{ color:var(--ink); }
+
+  .fiche{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:30px; margin-bottom:22px; box-shadow:var(--shadow-sm); }
+  .fiche-head{ display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap; margin-bottom:16px; }
+  .fiche h2{ font-family:'Sora',sans-serif; font-size:23px; margin:8px 0 0; }
+  .fiche-tags{ display:flex; gap:8px; flex-wrap:wrap; }
+  .fiche-meta{ display:flex; gap:16px; flex-wrap:wrap; font-size:13px; color:var(--ink-soft); margin:18px 0 22px; }
+  .fiche-meta span{ display:inline-flex; align-items:center; gap:5px; }
+  .fiche-desc{ font-size:15px; line-height:1.75; white-space:pre-wrap; border-top:1px solid var(--border); padding-top:20px; }
+
+  .contact-box{ background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius); padding:26px; }
+  .contact-box h3{ margin:0 0 4px; font-size:16px; font-family:'Sora',sans-serif; }
+  .contact-box p.note{ font-size:12.5px; color:var(--ink-soft); margin:0 0 18px; }
+
+  form.card-form{ display:flex; flex-direction:column; gap:16px; }
+  .field{ display:flex; flex-direction:column; gap:6px; }
+  .field-label{ font-size:12px; font-weight:600; color:var(--ink-soft); }
+  .field-hint{ font-size:11.5px; color:var(--ink-soft); }
+  .field-row{ display:flex; gap:14px; flex-wrap:wrap; }
+  .field-row .field{ flex:1; min-width:170px; }
+
+  .type-toggle{ display:flex; gap:10px; margin-bottom:8px; }
+  .type-opt{ flex:1; border:1.5px solid var(--border); border-radius:var(--radius); padding:16px; cursor:pointer; background:var(--surface); transition:.15s ease; }
+  .type-opt:hover{ border-color:var(--ink-soft); }
+  .type-opt.on{ border-color:var(--ink); background:var(--ink); color:#fff; }
+  .type-opt strong{ display:block; font-family:'Sora',sans-serif; font-size:14.5px; }
+  .type-opt small{ display:block; opacity:.75; margin-top:3px; font-size:12px; }
+
+  .post-page{ max-width:640px; margin:0 auto; }
+
+  .paywall-note{ display:flex; align-items:center; justify-content:space-between; gap:14px; background:var(--gold-soft); border:1px solid #E7D8A8; border-radius:var(--radius); padding:16px 20px; margin-bottom:20px; flex-wrap:wrap; }
+  .paywall-note b{ font-family:'Sora',sans-serif; font-size:15px; color:#5C4712; }
+  .paywall-note span{ font-size:12.5px; color:#7A5F1C; }
+
+  .banner{ display:flex; align-items:center; justify-content:space-between; gap:14px; background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius); padding:14px 18px; margin-bottom:20px; flex-wrap:wrap; font-size:13.5px; }
+
+  .flash{ background:var(--teal); color:#fff; padding:12px 18px; border-radius:var(--radius-sm); margin-bottom:20px; font-size:13.5px; display:flex; align-items:center; gap:8px; }
+  .err{ background:var(--accent); color:#fff; padding:10px 16px; border-radius:var(--radius-sm); margin-bottom:16px; font-size:13px; }
+
+  footer{ border-top:1px solid var(--border); padding:28px 0 60px; margin-top:70px; }
+  footer p{ font-size:12px; color:var(--ink-soft); margin:0 0 4px; }
+
+  .spin{ display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,.5); border-top-color:#fff; border-radius:50%; animation:spin 1s linear infinite; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  .dash-move{ stroke-dasharray:4 5; animation:dashmove 1.4s linear infinite; }
+  @keyframes dashmove{ to{ stroke-dashoffset:-18; } }
+
+  @media (max-width:760px){
+    .hero h1{ font-size:31px; }
+    .map-wrap{ grid-template-columns:1fr; }
+    .map-filters{ border-right:none; border-bottom:1px solid var(--border); flex-direction:row; flex-wrap:wrap; }
+    .map-filters > div{ flex:1; min-width:140px; }
+    .ad-card{ flex-wrap:wrap; }
+    .ad-card .tags{ margin-left:0; flex-direction:row; }
+  }
+</style>
+</head>
+<body>
+<div id="root">
+  <header class="top">
+    <div class="shell top-inner">
+      <div class="brand" data-action="goto" data-view="home">
+        <svg class="brand-mark" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="34" height="34" rx="9" fill="#14171C"/>
+          <circle cx="11" cy="21" r="3.4" fill="#FF5A33"/>
+          <circle cx="23" cy="13" r="3.4" fill="#0F7A6A"/>
+          <path d="M13.6 19 20.4 15" stroke="#F6F6F2" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="1 3.4"/>
+        </svg>
+        <div class="brand-text"><b>AgentZone</b><span>Entreprises &amp; agents commerciaux</span></div>
+      </div>
+      <nav>
+        <span class="navlink" data-nav="home" data-action="goto" data-view="home">Accueil</span>
+        <span class="navlink" data-nav="browse" data-action="goto" data-view="browse">Annonces</span>
+        <span class="navlink cta" data-action="goto" data-view="post">Déposer une annonce</span>
+      </nav>
+    </div>
+  </header>
+
+  <main class="shell" id="view-root" style="padding-bottom:40px;"></main>
+
+  <footer class="shell">
+    <p>AgentZone — plateforme minimaliste de mise en relation. Pas de compte, pas de suivi.</p>
+    <p>Annonce entreprise : 20&nbsp;€ · Annonce agent commercial : 5&nbsp;€ · Validité 3 mois.</p>
+  </footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  /* ====== À CONFIGURER AVANT MISE EN LIGNE ======
+     1. Dans le Dashboard Stripe, crée deux "Payment Links" (Paiements > Liens de paiement) :
+        - un produit "Annonce entreprise — AgentZone" à 20,00 €
+        - un produit "Annonce agent commercial — AgentZone" à 5,00 €
+     2. Pour chaque lien, dans "Après paiement" > "Rediriger les clients vers votre site",
+        mets l'URL de ton site suivie de ?paid=success (ex : https://agentzone.fr/?paid=success)
+     3. Colle les deux URLs de Payment Link ci-dessous. */
+  var STRIPE_LINKS = {
+    entreprise: "https://buy.stripe.com/REMPLACER_LIEN_ENTREPRISE_20E",
+    agent: "https://buy.stripe.com/REMPLACER_LIEN_AGENT_5E"
+  };
+  var PRICES = { entreprise: "20 €", agent: "5 €" };
+  var STRIPE_CONFIGURED = STRIPE_LINKS.entreprise.indexOf("REMPLACER") === -1 && STRIPE_LINKS.agent.indexOf("REMPLACER") === -1;
+  var AD_DURATION_DAYS = 90;
+  /* ================================================ */
+
+  var SECTORS = ["Assurance","Immobilier","Industrie","IT / Digital","Cosmétique","Agroalimentaire","BTP","Textile","Automobile","Services BtoB","Energie","Santé / Paramédical","Mode","Ameublement","Autre"];
+  var MODES = ["Présentiel","Distanciel","Les deux"];
+  var CANAUX = ["Email","Téléphone","Visioconférence","Peu importe"];
+
+  var state = {
+    ads: null,
+    view: "home",
+    activeId: null,
+    postType: "entreprise",
+    browseFilters: { type:"tous", secteur:"", zone:"", mode:"tous", q:"" },
+    mapFilters: { loc:"", secteur:"", mode:"tous", canal:"tous" },
+    flash: "", error: "",
+    pendingAd: undefined /* undefined = not checked yet */
+  };
+
+  var homeMap = null, homeMarkers = null;
+
+  function esc(s){
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
+      return ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"})[c];
+    });
+  }
+  function ref(n){ return "AZ-" + new Date().getFullYear() + "-" + String(n).padStart(4,"0"); }
+  function timeAgo(iso){
+    var diff = Math.floor((Date.now() - new Date(iso).getTime())/1000);
+    if(diff<60) return "à l'instant";
+    if(diff<3600) return Math.floor(diff/60)+" min";
+    if(diff<86400) return Math.floor(diff/3600)+" h";
+    var d = Math.floor(diff/86400);
+    if(d<30) return d+" j";
+    return new Date(iso).toLocaleDateString("fr-FR");
+  }
+  function isExpired(a){ return a.expiresAt && new Date(a.expiresAt) < new Date(); }
+  function daysLeft(a){ return Math.max(0, Math.ceil((new Date(a.expiresAt) - new Date())/86400000)); }
+  function optionsHtml(arr, current){
+    return arr.map(function(s){ return '<option value="'+esc(s)+'"'+(s===current?" selected":"")+'>'+esc(s)+'</option>'; }).join("");
+  }
+
+  async function loadAds(){
+    try{ var r = await window.storage.get("annonces", true); state.ads = r ? JSON.parse(r.value) : []; }
+    catch(e){ state.ads = []; }
+  }
+  async function saveAds(){
+    try{ await window.storage.set("annonces", JSON.stringify(state.ads), true); return true; }
+    catch(e){ state.error = "La sauvegarde a échoué, réessayez."; return false; }
+  }
+  async function loadPendingAd(){
+    try{ var r = await window.storage.get("pending_ad", false); state.pendingAd = r ? JSON.parse(r.value) : null; }
+    catch(e){ state.pendingAd = null; }
+  }
+  async function savePendingAd(ad){
+    try{ await window.storage.set("pending_ad", JSON.stringify(ad), false); return true; }catch(e){ return false; }
+  }
+  async function clearPendingAd(){
+    try{ await window.storage.delete("pending_ad", false); }catch(e){}
+    state.pendingAd = null;
+  }
+  async function geocode(ville){
+    if(!ville) return null;
+    try{
+      var url = "https://nominatim.openstreetmap.org/search?format=json&limit=1&q=" + encodeURIComponent(ville + ", France");
+      var res = await fetch(url, { headers: { "Accept": "application/json" } });
+      var data = await res.json();
+      if(data && data[0]) return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+    }catch(e){}
+    return null;
+  }
+
+  function activeAds(){ return (state.ads||[]).filter(function(a){ return !isExpired(a); }); }
+  function filteredAds(list, f){
+    return (list||[])
+      .filter(function(a){ return f.type==="tous" || a.type===f.type; })
+      .filter(function(a){ return !f.secteur || a.secteur===f.secteur; })
+      .filter(function(a){ return f.mode==="tous" || !f.mode || a.mode===f.mode; })
+      .filter(function(a){ return !f.zone || ((a.ville||"")+" "+(a.zoneCouverte||"")).toLowerCase().includes(f.zone.toLowerCase()); })
+      .filter(function(a){ if(!f.q) return true; var hay=(a.titre+" "+a.description+" "+a.secteur).toLowerCase(); return hay.includes(f.q.toLowerCase()); })
+      .sort(function(a,b){ return new Date(b.createdAt) - new Date(a.createdAt); });
+  }
+
+  /* ---------- PAIEMENT ---------- */
+  async function goToPayment(ad){
+    var ok = await savePendingAd(ad);
+    if(!ok){ state.error = "Impossible de préparer votre annonce, réessayez."; renderView(); return; }
+    if(!STRIPE_CONFIGURED){
+      state.error = "Le paiement Stripe n'est pas encore configuré sur ce site (liens de paiement manquants).";
+      renderView();
+      return;
+    }
+    var token = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
+    window.location.href = STRIPE_LINKS[ad.type] + "?client_reference_id=" + token;
+  }
+
+  async function finalizePendingAd(){
+    if(!state.pendingAd) return null;
+    var ad = state.pendingAd;
+    var geo = await geocode(ad.ville);
+    var list = state.ads || [];
+    var now = new Date();
+    var expires = new Date(now.getTime() + AD_DURATION_DAYS*86400000);
+    var newAd = Object.assign({}, ad, {
+      id: (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())+Math.random()),
+      ref: ref(list.length+1),
+      createdAt: now.toISOString(),
+      expiresAt: expires.toISOString(),
+      lat: geo ? geo.lat : null,
+      lon: geo ? geo.lon : null
+    });
+    state.ads = [newAd].concat(list);
+    await saveAds();
+    await clearPendingAd();
+    return newAd;
+  }
+
+  /* ---------- RENDER: HOME ---------- */
+  function renderHome(){
+    var ads = state.ads;
+    var active = ads ? activeAds() : [];
+    var recent = active.slice().sort(function(a,b){ return new Date(b.createdAt)-new Date(a.createdAt); }).slice(0,5);
+    var entreprises = active.filter(function(a){ return a.type==="entreprise"; });
+
+    var html = "";
+    if(state.pendingAd){
+      html += '<div class="banner"><span>Vous avez une annonce en attente de paiement (<b>'+esc(state.pendingAd.titre)+'</b>).</span>'+
+        '<span style="display:flex;gap:8px;">'+
+          '<button class="btn sm accent" data-action="resume-payment">Reprendre le paiement</button>'+
+          '<button class="btn sm outline" data-action="discard-pending">Abandonner</button>'+
+        '</span></div>';
+    }
+
+    html += '<section class="hero">';
+    html += '  <div class="hero-top"><svg class="connector" viewBox="0 0 64 22" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="8" cy="16" r="5" fill="#0F7A6A"/><circle cx="56" cy="6" r="5" fill="#FF5A33"/><path d="M13 15 51 7" stroke="#C9C8BE" stroke-width="2" class="dash-move" stroke-linecap="round"/></svg></div>';
+    html += '  <h1 class="display">Le point de rendez-vous des agents commerciaux et des entreprises.</h1>';
+    html += '  <p class="lead">Une entreprise cherche un agent pour porter ses produits sur un secteur. Un agent cherche une entreprise à représenter. Ici, ils se trouvent — sans intermédiaire, sans abonnement, sans fichier client à remplir.</p>';
+    html += '  <div class="pitch-row">';
+    html += '    <div class="pitch-card a" data-action="start-post" data-type="entreprise"><div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="9" width="18" height="12" rx="1"/><path d="M9 21V9l3-5 3 5v12"/></svg></div><h3>Je suis une entreprise</h3><p>Je cherche un agent commercial pour représenter mes produits sur un secteur.</p><div class="price-tag">20 € l\'annonce · valable 3 mois</div></div>';
+    html += '    <div class="pitch-card b" data-action="start-post" data-type="agent"><div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg></div><h3>Je suis agent commercial</h3><p>Je cherche une entreprise à représenter, sur mon secteur et ma zone.</p><div class="price-tag">5 € l\'annonce · valable 3 mois</div></div>';
+    html += '  </div>';
+    html += '  <div class="search-bar"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#666B72" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>';
+    html += '    <input id="home-q" data-filter="home-q" placeholder="Un secteur, une ville, un mot-clé…" />';
+    html += '    <button class="btn" data-action="home-search">Chercher</button>';
+    html += '  </div>';
+    html += '</section>';
+
+    html += '<section id="map-section">';
+    html += '  <div class="section-head"><div><h2>Entreprises qui recrutent en ce moment</h2><p>Localisez les mandats disponibles et filtrez selon vos critères.</p></div></div>';
+    html += '  <div class="map-wrap">';
+    html += '    <div class="map-filters">';
+    html += '      <div><span class="f-label">Localisation</span><input data-filter="map-loc" placeholder="Ville, région…"/></div>';
+    html += '      <div><span class="f-label">Secteur</span><select data-filter="map-secteur"><option value="">Tous secteurs</option>'+optionsHtml(SECTORS,"")+'</select></div>';
+    html += '      <div><span class="f-label">Mode</span><select data-filter="map-mode"><option value="tous">Présentiel / distanciel</option>'+optionsHtml(MODES,"")+'</select></div>';
+    html += '      <div><span class="f-label">Canal de contact</span><select data-filter="map-canal"><option value="tous">Tous les canaux</option>'+optionsHtml(CANAUX,"")+'</select></div>';
+    html += '    </div>';
+    html += '    <div>';
+    if(ads === null){ html += '<div class="map-empty">Chargement de la carte…</div>'; }
+    else if(entreprises.length === 0){ html += '<div class="map-empty">Aucune entreprise n\'a encore publié d\'annonce.<br/>La carte s\'animera dès la première publication.</div>'; }
+    else{
+      html += '<div id="leaflet-map"></div>';
+      html += '<div class="map-legend"><span class="pin" style="width:11px;height:11px;"></span> Entreprise avec une annonce active — cliquez un point pour voir le détail.</div>';
+    }
+    html += '    </div></div></section>';
+
+    html += '<section>';
+    html += '  <div class="section-head"><div><h2>Dernières annonces</h2></div>' + (recent.length>0 ? '<span class="link-more" data-action="goto" data-view="browse">Voir tout →</span>' : '') + '</div>';
+    if(ads === null){ html += loadingHtml(); }
+    else if(recent.length === 0){ html += '<div class="empty"><strong>Aucune annonce pour le moment.</strong>Soyez la première entreprise ou le premier agent à en déposer une.</div>'; }
+    else{ html += '<div class="ad-grid">' + recent.map(adCardHtml).join("") + '</div>'; }
+    html += '</section>';
+    return html;
+  }
+
+  function initHomeMap(){
+    var el = document.getElementById("leaflet-map");
+    if(!el) return;
+    try{
+      if(typeof L === "undefined"){ el.outerHTML = '<div class="map-empty">La carte n\'a pas pu se charger (connexion bloquée). Les annonces restent consultables dans la liste ci-dessous.</div>'; return; }
+      if(homeMap){ homeMap.remove(); homeMap = null; }
+      homeMap = L.map(el, { scrollWheelZoom:false }).setView([46.6, 2.4], 5.6);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '&copy; OpenStreetMap contributors' }).addTo(homeMap);
+      homeMarkers = L.layerGroup().addTo(homeMap);
+      updateMapMarkers();
+    }catch(e){ /* la carte échoue sans bloquer le reste du site */ }
+  }
+
+  function updateMapMarkers(){
+    if(!homeMarkers) return;
+    homeMarkers.clearLayers();
+    var entreprises = activeAds().filter(function(a){ return a.type==="entreprise"; });
+    var f = state.mapFilters;
+    var matched = entreprises.filter(function(a){
+      if(f.loc && !(((a.ville||"")+" "+(a.zoneCouverte||"")).toLowerCase().includes(f.loc.toLowerCase()))) return false;
+      if(f.secteur && a.secteur !== f.secteur) return false;
+      if(f.mode!=="tous" && f.mode && a.mode !== f.mode) return false;
+      if(f.canal!=="tous" && f.canal && a.canal !== f.canal) return false;
+      return true;
+    }).filter(function(a){ return a.lat && a.lon; });
+
+    var icon = L.divIcon({ className:"", html:'<div class="pin"></div>', iconSize:[16,16], iconAnchor:[8,15] });
+    matched.forEach(function(a){
+      var m = L.marker([a.lat, a.lon], { icon: icon }).addTo(homeMarkers);
+      var popup = document.createElement("div");
+      popup.innerHTML = '<b>'+esc(a.titre)+'</b><br/>'+esc(a.secteur)+' · '+esc(a.ville)+'<br/><span style="color:#666B72">'+esc(a.mode)+'</span><br/>'+
+        '<a href="#" data-action="goto-detail" data-id="'+a.id+'" style="color:#FF5A33;font-weight:600;">Voir l\'annonce →</a>';
+      m.bindPopup(popup);
+    });
+  }
+
+  /* ---------- RENDER: BROWSE ---------- */
+  function renderBrowse(){
+    var f = state.browseFilters;
+    var list = state.ads === null ? [] : filteredAds(activeAds(), f);
+    var html = '<div style="padding-top:26px;">';
+    html += '<div class="section-head" style="margin-top:0;"><div><h2>Toutes les annonces</h2></div></div>';
+    html += '<div class="filters-bar">';
+    html += '<select data-filter="browse-type"><option value="tous"'+(f.type==="tous"?" selected":"")+'>Tous les types</option><option value="entreprise"'+(f.type==="entreprise"?" selected":"")+'>Entreprise recrute</option><option value="agent"'+(f.type==="agent"?" selected":"")+'>Agent disponible</option></select>';
+    html += '<select data-filter="browse-secteur"><option value="">Tous secteurs</option>'+optionsHtml(SECTORS, f.secteur)+'</select>';
+    html += '<select data-filter="browse-mode"><option value="tous"'+(f.mode==="tous"?" selected":"")+'>Présentiel / distanciel</option>'+optionsHtml(MODES, f.mode==="tous"?"":f.mode)+'</select>';
+    html += '<input data-filter="browse-zone" placeholder="Ville / zone" value="'+esc(f.zone)+'"/>';
+    html += '<input data-filter="browse-q" placeholder="Mot-clé" value="'+esc(f.q)+'"/>';
+    if(f.type!=="tous"||f.secteur||f.zone||f.q||f.mode!=="tous"){ html += '<button class="btn outline sm" data-action="reset-browse-filters">Réinitialiser</button>'; }
+    html += '</div>';
+    if(state.ads === null){ html += loadingHtml(); }
+    else if(list.length===0){ html += '<div class="empty"><strong>Aucune annonce ne correspond.</strong>Essayez d\'élargir vos critères, ou déposez la vôtre.</div>'; }
+    else{ html += '<div class="ad-grid">' + list.map(adCardHtml).join("") + '</div>'; }
+    html += '</div>';
+    return html;
+  }
+
+  function adCardHtml(a){
+    return '<div class="ad-card" data-action="goto-detail" data-id="'+a.id+'">'+
+      '<div style="flex:1;min-width:0;">'+
+        '<div class="ref mono">'+a.ref+'</div>'+
+        '<h4>'+esc(a.titre)+'</h4>'+
+        '<div class="ad-meta"><span>'+esc(a.secteur)+'</span><span>'+esc(a.ville||a.zoneCouverte||"")+'</span><span>'+esc(a.mode)+'</span><span>'+timeAgo(a.createdAt)+'</span></div>'+
+      '</div>'+
+      '<div class="tags"><span class="pill '+(a.type==="entreprise"?"entreprise":"agent")+'">'+(a.type==="entreprise"?"Entreprise":"Agent")+'</span></div>'+
+    '</div>';
+  }
+
+  /* ---------- RENDER: DETAIL ---------- */
+  function renderDetail(id){
+    var ad = (state.ads||[]).find(function(a){ return a.id===id; });
+    if(!ad){
+      return '<div class="empty" style="margin-top:26px;"><strong>Cette annonce n\'existe plus.</strong><div style="margin-top:12px;"><span class="back-link" style="margin:0;justify-content:center;" data-action="goto" data-view="browse">← Retour aux annonces</span></div></div>';
+    }
+    var expired = isExpired(ad);
+    var html = '<span class="back-link" data-action="goto" data-view="browse">← Retour aux annonces</span>';
+    html += '<div class="fiche">';
+    html += '  <div class="fiche-head"><div><span class="ref mono" style="font-size:12px;color:var(--ink-soft)">'+ad.ref+'</span><h2>'+esc(ad.titre)+'</h2></div>';
+    html += '  <div class="fiche-tags"><span class="pill '+(ad.type==="entreprise"?"entreprise":"agent")+'">'+(ad.type==="entreprise"?"Entreprise":"Agent")+'</span><span class="pill neutral">'+esc(ad.mode)+'</span>'+(expired?'<span class="pill warn">Expirée</span>':'<span class="pill neutral">Expire dans '+daysLeft(ad)+' j</span>')+'</div></div>';
+    html += '  <div class="fiche-meta"><span>'+esc(ad.secteur)+'</span><span>'+esc(ad.ville)+(ad.zoneCouverte? " · "+esc(ad.zoneCouverte) : "")+'</span><span>Canal préféré : '+esc(ad.canal)+'</span><span>Publiée '+timeAgo(ad.createdAt)+'</span></div>';
+    html += '  <div class="fiche-desc">'+esc(ad.description)+'</div>';
+    html += '</div>';
+
+    if(expired){
+      html += '<div class="empty"><strong>Cette annonce a expiré.</strong>Les annonces sont valables 3 mois. '+(ad.type==="entreprise"?"L'entreprise":"L'agent")+' peut en déposer une nouvelle.</div>';
+    } else {
+      html += '<div class="contact-box">';
+      html += '  <h3>Contacter '+(ad.type==="entreprise"?"l'entreprise":"l'agent")+'</h3>';
+      html += '  <p class="note">Message envoyé directement depuis votre messagerie — aucune donnée n\'est conservée sur ce site.</p>';
+      html += '  <div id="contact-sent" style="display:none;align-items:center;gap:8px;font-size:14px;"><span style="color:var(--teal);">✓</span> Votre messagerie s\'est ouverte avec le message pré-rempli. Il ne reste qu\'à l\'envoyer.</div>';
+      html += '  <form class="card-form" data-form="contact" data-ad-id="'+ad.id+'">';
+      html += '    <div class="field-row"><div class="field"><span class="field-label">Votre nom</span><input required name="name" placeholder="Jean Dupont"/></div><div class="field"><span class="field-label">Votre email</span><input required type="email" name="email" placeholder="jean@exemple.fr"/></div></div>';
+      html += '    <div class="field"><span class="field-label">Votre message</span><textarea required name="message" placeholder="Bonjour, votre annonce m\'intéresse…"></textarea></div>';
+      html += '    <div><button class="btn accent" type="submit">Envoyer le message</button></div>';
+      html += '  </form></div>';
+    }
+    return html;
+  }
+
+  /* ---------- RENDER: POST ---------- */
+  function renderPost(){
+    var t = state.postType;
+    var html = '<div class="post-page" style="padding-top:26px;">';
+    html += '<div class="section-head" style="margin-top:0;"><div><h2>Déposer une annonce</h2></div></div>';
+    html += '<div class="paywall-note"><div><b>'+PRICES[t]+' pour publier</b><br/><span>Paiement sécurisé par Stripe · annonce visible 3 mois</span></div></div>';
+    if(!STRIPE_CONFIGURED){
+      html += '<div class="err">Le paiement n\'est pas encore configuré sur ce site (lien Stripe manquant côté administrateur).</div>';
+    }
+    html += '<div class="type-toggle">';
+    html += '  <div class="type-opt'+(t==="entreprise"?" on":"")+'" data-action="set-post-type" data-type="entreprise"><strong>Entreprise</strong><small>Je recherche un agent commercial · 20 €</small></div>';
+    html += '  <div class="type-opt'+(t==="agent"?" on":"")+'" data-action="set-post-type" data-type="agent"><strong>Agent commercial</strong><small>Je recherche une entreprise à représenter · 5 €</small></div>';
+    html += '</div>';
+    html += '<form class="card-form" data-form="post" style="margin-top:20px;">';
+    html += '  <div class="field"><span class="field-label">Titre de l\'annonce</span><input required name="titre" placeholder="'+(t==="entreprise"?"Ex : Agent commercial cosmétique bio — Grand Ouest":"Ex : Agent expérimenté BTP cherche mandat en Bretagne")+'"/></div>';
+    html += '  <div class="field-row"><div class="field"><span class="field-label">Secteur d\'activité</span><select required name="secteur"><option value="">Choisir…</option>'+optionsHtml(SECTORS,"")+'</select></div>';
+    html += '  <div class="field"><span class="field-label">Ville</span><input required name="ville" placeholder="Ex : Nantes"/><span class="field-hint">Utilisée pour vous situer sur la carte.</span></div></div>';
+    html += '  <div class="field"><span class="field-label">Zone couverte (optionnel)</span><input name="zoneCouverte" placeholder="Ex : Grand Ouest, national, export…"/></div>';
+    html += '  <div class="field-row"><div class="field"><span class="field-label">Mode de collaboration</span><select required name="mode">'+optionsHtml(MODES,"")+'</select></div>';
+    html += '  <div class="field"><span class="field-label">Canal de contact préféré</span><select required name="canal">'+optionsHtml(CANAUX,"")+'</select></div></div>';
+    html += '  <div class="field"><span class="field-label">Description</span><textarea required name="description" placeholder="'+(t==="entreprise"?"Produits représentés, type de mandat, commission proposée, portefeuille existant ou non…":"Votre expérience, vos secteurs maîtrisés, votre portefeuille clients, vos disponibilités…")+'"></textarea></div>';
+    html += '  <div class="field"><span class="field-label">Email de contact</span><input required type="email" name="contactEmail" placeholder="contact@exemple.fr"/><span class="field-hint">Utilisé uniquement pour recevoir les messages des personnes intéressées.</span></div>';
+    html += '  <div><button class="btn accent" type="submit">Payer '+PRICES[t]+' et publier</button></div>';
+    html += '</form></div>';
+    return html;
+  }
+
+  function loadingHtml(){ return '<div class="empty"><span class="spin" style="border-color:var(--ink-soft);border-top-color:transparent;"></span></div>'; }
+
+  /* ---------- MAIN RENDER ---------- */
+  function renderView(){
+    var root = document.getElementById("view-root");
+    var out = "";
+    if(state.error) out += '<div class="err">'+esc(state.error)+'</div>';
+    if(state.flash && state.view!=="detail") out += '<div class="flash">✓ '+esc(state.flash)+'</div>';
+
+    if(state.view==="home") out += renderHome();
+    else if(state.view==="browse") out += renderBrowse();
+    else if(state.view==="detail") out += renderDetail(state.activeId);
+    else if(state.view==="post") out += renderPost();
+
+    root.innerHTML = out;
+    document.querySelectorAll(".navlink[data-nav]").forEach(function(n){ n.classList.toggle("active", n.getAttribute("data-nav")===state.view); });
+    if(state.view==="home"){ setTimeout(initHomeMap, 0); }
+    state.flash = ""; state.error = "";
+  }
+
+  function goto(view, id){ state.view = view; state.activeId = id || null; renderView(); window.scrollTo({top:0, behavior:"smooth"}); }
+
+  /* ---------- ÉVÉNEMENTS (délégation, pas d'attributs inline) ---------- */
+  var FILTER_MAP = {
+    "browse-type": ["browseFilters","type"], "browse-secteur": ["browseFilters","secteur"],
+    "browse-mode": ["browseFilters","mode"], "browse-zone": ["browseFilters","zone"], "browse-q": ["browseFilters","q"],
+    "map-loc": ["mapFilters","loc"], "map-secteur": ["mapFilters","secteur"], "map-mode": ["mapFilters","mode"], "map-canal": ["mapFilters","canal"]
+  };
+
+  document.addEventListener("click", async function(e){
+    var t = e.target.closest("[data-action]");
+    if(!t) return;
+    var action = t.getAttribute("data-action");
+    if(action==="goto"){ goto(t.getAttribute("data-view")); }
+    else if(action==="goto-detail"){ e.preventDefault(); goto("detail", t.getAttribute("data-id")); }
+    else if(action==="start-post"){ state.postType = t.getAttribute("data-type"); goto("post"); }
+    else if(action==="set-post-type"){ state.postType = t.getAttribute("data-type"); renderView(); }
+    else if(action==="reset-browse-filters"){ state.browseFilters = { type:"tous", secteur:"", zone:"", mode:"tous", q:"" }; renderView(); }
+    else if(action==="home-search"){ var v = document.getElementById("home-q"); state.browseFilters.q = v?v.value:""; goto("browse"); }
+    else if(action==="resume-payment"){ if(state.pendingAd) goToPayment(state.pendingAd); }
+    else if(action==="discard-pending"){ await clearPendingAd(); renderView(); }
+  });
+
+  document.addEventListener("input", function(e){
+    var key = e.target.getAttribute && e.target.getAttribute("data-filter");
+    if(!key || !FILTER_MAP[key]) return;
+    var path = FILTER_MAP[key];
+    state[path[0]][path[1]] = e.target.value;
+    if(path[0]==="mapFilters") updateMapMarkers(); else renderView();
+  });
+  document.addEventListener("change", function(e){
+    var key = e.target.getAttribute && e.target.getAttribute("data-filter");
+    if(!key || !FILTER_MAP[key]) return;
+    var path = FILTER_MAP[key];
+    state[path[0]][path[1]] = e.target.value;
+    if(path[0]==="mapFilters") updateMapMarkers(); else renderView();
+  });
+  document.addEventListener("keydown", function(e){
+    if(e.target && e.target.getAttribute && e.target.getAttribute("data-filter")==="home-q" && e.key==="Enter"){
+      state.browseFilters.q = e.target.value; goto("browse");
+    }
+  });
+
+  document.addEventListener("submit", async function(e){
+    var form = e.target;
+    if(form.getAttribute && form.getAttribute("data-form")==="post"){
+      e.preventDefault();
+      var btn = form.querySelector("button[type=submit]");
+      var original = btn.innerHTML;
+      btn.disabled = true; btn.innerHTML = '<span class="spin"></span> Préparation du paiement…';
+      var ad = {
+        type: state.postType,
+        titre: form.titre.value.trim(),
+        secteur: form.secteur.value,
+        ville: form.ville.value.trim(),
+        zoneCouverte: form.zoneCouverte.value.trim(),
+        mode: form.mode.value,
+        canal: form.canal.value,
+        description: form.description.value.trim(),
+        contactEmail: form.contactEmail.value.trim()
+      };
+      state.pendingAd = ad;
+      await goToPayment(ad);
+      btn.disabled = false; btn.innerHTML = original;
+    }
+    else if(form.getAttribute && form.getAttribute("data-form")==="contact"){
+      e.preventDefault();
+      var adId = form.getAttribute("data-ad-id");
+      var ad = (state.ads||[]).find(function(a){ return a.id===adId; });
+      if(!ad) return;
+      var subject = encodeURIComponent("Contact suite à votre annonce " + ad.ref + " — AgentZone");
+      var body = encodeURIComponent("Bonjour,\n\n" + form.message.value + "\n\n— " + form.name.value + (form.email.value ? " (" + form.email.value + ")" : "") + "\n\nEn réponse à l'annonce \"" + ad.titre + "\" (" + ad.ref + ").");
+      window.location.href = "mailto:" + ad.contactEmail + "?subject=" + subject + "&body=" + body;
+      var sent = document.getElementById("contact-sent");
+      if(sent){ sent.style.display = "flex"; form.style.display = "none"; }
+    }
+  });
+
+  /* ---------- INIT ---------- */
+  async function init(){
+    await Promise.all([loadAds(), loadPendingAd()]);
+    var params = new URLSearchParams(window.location.search);
+    if(params.get("paid")==="success" && state.pendingAd){
+      var newAd = await finalizePendingAd();
+      history.replaceState(null, "", window.location.pathname);
+      if(newAd){ state.flash = "Paiement reçu — votre annonce est publiée pour 3 mois."; goto("detail", newAd.id); return; }
+    } else if(params.get("paid")==="success"){
+      history.replaceState(null, "", window.location.pathname);
+      state.error = "Paiement reçu, mais aucune annonce en attente n'a été retrouvée dans ce navigateur. Contactez-nous si le prélèvement a bien eu lieu.";
+    }
+    renderView();
+  }
+  init();
+})();
+</script>
+</body>
+</html>
