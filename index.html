@@ -95,6 +95,11 @@
   .search-bar input{ flex:1; min-width:160px; border:none; padding:10px 6px; }
   .search-bar input:focus{ border:none; }
 
+  .stats-bar{ display:flex; gap:14px; flex-wrap:wrap; margin-bottom:6px; }
+  .stat{ flex:1; min-width:150px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:18px 20px; text-align:center; }
+  .stat-num{ display:block; font-family:'Sora',sans-serif; font-size:28px; font-weight:700; color:var(--ink); line-height:1.1; }
+  .stat-label{ display:block; font-size:12px; color:var(--ink-soft); margin-top:4px; }
+
   .section-head{ display:flex; align-items:baseline; justify-content:space-between; gap:14px; margin:52px 0 18px; flex-wrap:wrap; }
   .section-head h2{ font-family:'Sora',sans-serif; font-size:21px; margin:0; letter-spacing:-.01em; }
   .section-head p{ margin:4px 0 0; font-size:13.5px; color:var(--ink-soft); }
@@ -489,7 +494,20 @@
     html += '  </div>';
     html += '</section>';
 
-    html += '<section id="map-section">';
+    html += '<section class="stats-bar">';
+    if(ads === null){
+      html += '<div class="stat"><span class="stat-num">…</span><span class="stat-label">Membres inscrits</span></div>';
+      html += '<div class="stat"><span class="stat-num">…</span><span class="stat-label">Annonces entreprises</span></div>';
+      html += '<div class="stat"><span class="stat-num">…</span><span class="stat-label">Annonces agents</span></div>';
+    } else {
+      var membersCount = state.profils ? Object.keys(state.profils).length : 0;
+      var entCount = entreprises.length;
+      var agtCount = active.filter(function(a){ return a.type==="agent"; }).length;
+      html += '<div class="stat"><span class="stat-num">'+membersCount+'</span><span class="stat-label">Membres inscrits</span></div>';
+      html += '<div class="stat"><span class="stat-num">'+entCount+'</span><span class="stat-label">Annonces entreprises</span></div>';
+      html += '<div class="stat"><span class="stat-num">'+agtCount+'</span><span class="stat-label">Annonces agents</span></div>';
+    }
+    html += '</section>';
     html += '  <div class="section-head"><div><h2>Entreprises qui recrutent en ce moment</h2><p>Localisez les mandats disponibles et filtrez selon vos critères.</p></div></div>';
     html += '  <div class="map-wrap">';
     html += '    <div class="map-filters">';
