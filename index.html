@@ -3,7 +3,12 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>AgentZone — annonces entreprises &amp; agents commerciaux</title>
+<title>AgentZone — annonces entre entreprises et agents commerciaux</title>
+<meta name="description" content="AgentZone met en relation entreprises et agents commerciaux indépendants partout en France : déposez une annonce, trouvez un mandat, sans intermédiaire ni CRM." />
+<meta property="og:title" content="AgentZone — annonces entreprises & agents commerciaux" />
+<meta property="og:description" content="Le point de rendez-vous des agents commerciaux et des entreprises en France." />
+<meta property="og:type" content="website" />
+<link rel="canonical" href="https://REMPLACER-PAR-TON-DOMAINE.fr/" />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap');
@@ -462,10 +467,9 @@
     html += '    </div>';
     html += '    <div>';
     if(ads === null){ html += '<div class="map-empty">Chargement de la carte…</div>'; }
-    else if(entreprises.length === 0){ html += '<div class="map-empty">Aucune entreprise n\'a encore publié d\'annonce.<br/>La carte s\'animera dès la première publication.</div>'; }
     else{
       html += '<div id="leaflet-map"></div>';
-      html += '<div class="map-legend"><span class="pin" style="width:11px;height:11px;"></span> Entreprise avec une annonce active — cliquez un point pour voir le détail.</div>';
+      html += '<div class="map-legend"><span class="pin" style="width:11px;height:11px;"></span> '+(entreprises.length===0?'Aucune annonce entreprise pour l\'instant — la carte se remplira à la première publication.':'Entreprise avec une annonce active — cliquez un point pour voir le détail.')+'</div>';
     }
     html += '    </div></div></section>';
 
@@ -488,8 +492,10 @@
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '&copy; OpenStreetMap contributors' }).addTo(homeMap);
       homeMarkers = L.layerGroup().addTo(homeMap);
       updateMapMarkers();
+      setTimeout(function(){ if(homeMap) homeMap.invalidateSize(); }, 250);
     }catch(e){ /* la carte échoue sans bloquer le reste du site */ }
   }
+  window.addEventListener("resize", function(){ if(homeMap) homeMap.invalidateSize(); });
 
   function updateMapMarkers(){
     if(!homeMarkers) return;
