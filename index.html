@@ -173,6 +173,16 @@
   .footer-link{ font-size:12px; color:var(--ink); font-weight:600; cursor:pointer; text-decoration:underline; text-underline-offset:2px; }
   .footer-link:hover{ color:var(--accent-ink); }
 
+  .cookie-banner{
+    position:fixed; left:16px; right:16px; bottom:16px; max-width:640px; margin:0 auto; z-index:50;
+    background:var(--ink); color:#fff; border-radius:var(--radius); padding:18px 20px;
+    box-shadow:0 10px 30px rgba(0,0,0,.25); display:flex; flex-direction:column; gap:12px;
+  }
+  .cookie-banner p{ margin:0; font-size:13px; line-height:1.6; color:#E9E9E4; }
+  .cookie-actions{ display:flex; gap:10px; justify-content:flex-end; }
+  .cookie-banner .btn.outline{ color:#fff; border-color:rgba(255,255,255,.35); }
+  .cookie-banner .btn.outline:hover{ background:rgba(255,255,255,.1); }
+
   .legal-page{ max-width:720px; margin:0 auto; padding-top:26px; }
   .legal-page h2{ font-family:'Sora',sans-serif; font-size:24px; margin:0 0 6px; }
   .legal-page > p.legal-updated{ font-size:12.5px; color:var(--ink-soft); margin:0 0 34px; }
@@ -223,10 +233,16 @@
   <main class="shell" id="view-root" style="padding-bottom:40px;"></main>
 
   <footer class="shell">
-    <p>AgentZone — plateforme minimaliste de mise en relation. Pas de compte, pas de suivi.</p>
-    <p>Publication gratuite · Compte requis pour publier · Annonces valables 3 mois.</p>
+    <p>AgentZone</p>
     <p><span class="footer-link" data-action="goto" data-view="legal">Mentions légales &amp; confidentialité (RGPD)</span></p>
   </footer>
+  <div id="cookie-banner" class="cookie-banner" style="display:none;">
+    <p>Ce site utilise un cookie pour retenir tes préférences de recherche (type d'annonce, secteur, mode) d'une visite à l'autre. Aucune publicité, aucun cookie de mesure d'audience ou de suivi publicitaire.</p>
+    <div class="cookie-actions">
+      <button class="btn sm outline" data-action="cookies-decline">Refuser</button>
+      <button class="btn sm accent" data-action="cookies-accept">Accepter</button>
+    </div>
+  </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -282,6 +298,50 @@
   };
 
   var homeMap = null, homeMarkers = null;
+
+  /* ---------- COOKIES (préférences de recherche, avec consentement) ---------- */
+  function setCookie(name, value, days){
+    var d = new Date(); d.setTime(d.getTime() + days*86400000);
+    document.cookie = name + "=" + encodeURIComponent(value) + "; expires=" + d.toUTCString() + "; path=/; SameSite=Lax";
+  }
+  function getCookie(name){
+    var match = document.cookie.match(new RegExp("(?:^|; )" + name + "=([^;]*)"));
+    return match ? decodeURIComponent(match[1]) : null;
+  }
+  function deleteCookie(name){ document.cookie = name + "=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"; }
+
+  function getCookieConsent(){ return getCookie("az_cookie_consent"); } /* "accepted" | "declined" | null */
+  function savePreferencesCookie(){
+    if(getCookieConsent() !== "accepted") return;
+    setCookie("az_preferences", JSON.stringify({ type: state.browseFilters.type, secteur: state.browseFilters.secteur, mode: state.browseFilters.mode }), 365);
+  }
+  function loadPreferencesCookie(){
+    if(getCookieConsent() !== "accepted") return;
+    try{
+      var raw = getCookie("az_preferences");
+      if(!raw) return;
+      var prefs = JSON.parse(raw);
+      if(prefs.type) state.browseFilters.type = prefs.type;
+      if(prefs.secteur) state.browseFilters.secteur = prefs.secteur;
+      if(prefs.mode) state.browseFilters.mode = prefs.mode;
+    }catch(e){}
+  }
+  function showCookieBanner(){
+    var el = document.getElementById("cookie-banner");
+    if(el && !getCookieConsent()) el.style.display = "flex";
+  }
+  function acceptCookies(){
+    setCookie("az_cookie_consent", "accepted", 365);
+    var el = document.getElementById("cookie-banner");
+    if(el) el.style.display = "none";
+    savePreferencesCookie();
+  }
+  function declineCookies(){
+    setCookie("az_cookie_consent", "declined", 365);
+    deleteCookie("az_preferences");
+    var el = document.getElementById("cookie-banner");
+    if(el) el.style.display = "none";
+  }
 
   function esc(s){
     return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
@@ -792,7 +852,10 @@
     html += '<p><b>Vos droits :</b> conformément au RGPD, vous disposez d\'un droit d\'accès, de rectification, d\'effacement, de limitation et d\'opposition sur vos données. Pour l\'exercer, écrivez à <span class="legal-fill">[email dédié RGPD]</span>.</p>';
     html += '<p><b>Transferts hors UE :</b> l\'hébergement (Vercel) peut impliquer un transfert de données vers les États-Unis, encadré par les clauses contractuelles types de la Commission européenne.</p></div>';
 
-    html += '<div class="legal-block"><h3>5. Cookies et traceurs</h3><p>AgentZone n\'utilise aucun cookie publicitaire ni outil de suivi statistique. Seules les données strictement nécessaires au fonctionnement du site (annonces, annonce en attente de paiement) sont conservées.</p></div>';
+    html += '<div class="legal-block"><h3>5. Cookies</h3><p>AgentZone utilise un seul cookie non essentiel, soumis à ton consentement : <b>az_preferences</b>, qui retient ton dernier type d\'annonce, secteur et mode de recherche pour te les proposer par défaut à ta prochaine visite. Il est conservé 12 mois maximum.</p>'+
+      '<p>Un second cookie, <b>az_cookie_consent</b>, mémorise simplement ton choix (accepté/refusé) — celui-ci est strictement nécessaire au fonctionnement du bandeau de consentement et ne demande donc pas d\'accord préalable.</p>'+
+      '<p>AgentZone n\'utilise aucun cookie publicitaire, de suivi cross-site, ni d\'outil de mesure d\'audience tiers (type Google Analytics).</p>'+
+      '<p><span class="footer-link" data-action="cookies-reset">Modifier mon choix concernant les cookies</span></p></div>';
 
     html += '<div class="legal-block"><h3>6. Responsabilité du contenu</h3><p>Chaque utilisateur est seul responsable du contenu de l\'annonce qu\'il publie. L\'éditeur du site n\'exerce pas de modération a priori et ne garantit pas l\'exactitude des informations publiées par les annonceurs.</p></div>';
 
@@ -848,6 +911,14 @@
     else if(action==="reset-browse-filters"){ state.browseFilters = { type:"tous", secteur:"", zone:"", mode:"tous", commission:"tous", q:"" }; renderView(); }
     else if(action==="home-search"){ var v = document.getElementById("home-q"); state.browseFilters.q = v?v.value:""; goto("browse"); }
     else if(action==="set-auth-mode"){ state.authMode = t.getAttribute("data-mode"); renderView(); }
+    else if(action==="cookies-accept"){ acceptCookies(); }
+    else if(action==="cookies-decline"){ declineCookies(); }
+    else if(action==="cookies-reset"){
+      deleteCookie("az_cookie_consent");
+      deleteCookie("az_preferences");
+      var el = document.getElementById("cookie-banner");
+      if(el) el.style.display = "flex";
+    }
     else if(action==="forgot-password"){
       var form = t.closest("form");
       var email = form && form.email ? form.email.value.trim() : "";
@@ -880,6 +951,7 @@
     if(!key || !FILTER_MAP[key]) return;
     var path = FILTER_MAP[key];
     state[path[0]][path[1]] = e.target.value;
+    if(path[0]==="browseFilters") savePreferencesCookie();
     if(path[0]==="mapFilters") updateMapMarkers(); else renderView();
   });
   document.addEventListener("change", function(e){
@@ -887,6 +959,7 @@
     if(!key || !FILTER_MAP[key]) return;
     var path = FILTER_MAP[key];
     state[path[0]][path[1]] = e.target.value;
+    if(path[0]==="browseFilters") savePreferencesCookie();
     if(path[0]==="mapFilters") updateMapMarkers(); else renderView();
   });
   document.addEventListener("keydown", function(e){
@@ -992,6 +1065,7 @@
 
   /* ---------- INIT ---------- */
   async function init(){
+    loadPreferencesCookie();
     await Promise.all([loadAds(), loadProfils(), loadUser()]);
     if(supa){
       supa.auth.onAuthStateChange(function(event, session){
@@ -1003,6 +1077,7 @@
       });
     }
     renderView();
+    showCookieBanner();
   }
   init();
 })();
