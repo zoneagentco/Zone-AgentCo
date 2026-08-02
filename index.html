@@ -249,6 +249,13 @@
   var SECTORS = ["Assurance","Immobilier","Industrie","IT / Digital","Cosmétique","Agroalimentaire","BTP","Textile","Automobile","Services BtoB","Energie","Santé / Paramédical","Mode","Ameublement","Autre"];
   var MODES = ["Présentiel","Distanciel","Les deux"];
   var CANAUX = ["Email","Téléphone","Visioconférence","Peu importe"];
+  var COMMISSION_RANGES = [
+    { key:"0-5", label:"Moins de 5 %", min:0, max:5 },
+    { key:"5-10", label:"5 % à 10 %", min:5, max:10 },
+    { key:"10-15", label:"10 % à 15 %", min:10, max:15 },
+    { key:"15-20", label:"15 % à 20 %", min:15, max:20 },
+    { key:"20-999", label:"Plus de 20 %", min:20, max:999 }
+  ];
   var SOCIALS = [
     { key:"site", label:"Site web", ph:"https://monsite.fr" },
     { key:"linkedin", label:"LinkedIn", ph:"https://linkedin.com/in/…" },
@@ -261,8 +268,8 @@
     view: "home",
     activeId: null,
     postType: "entreprise",
-    browseFilters: { type:"tous", secteur:"", zone:"", mode:"tous", q:"" },
-    mapFilters: { loc:"", secteur:"", mode:"tous", canal:"tous" },
+    browseFilters: { type:"tous", secteur:"", zone:"", mode:"tous", commission:"tous", q:"" },
+    mapFilters: { loc:"", secteur:"", mode:"tous", canal:"tous", commission:"tous" },
     flash: "", error: "",
     user: undefined,       /* utilisateur Supabase Auth connecté ({id,email}), null si déconnecté */
     authMode: "login",     /* "login" ou "signup", pour l'écran Mon compte */
@@ -296,13 +303,13 @@
     return { id:r.id, ref:r.ref, type:r.type, titre:r.titre, secteur:r.secteur, ville:r.ville,
       zoneCouverte:r.zone_couverte, mode:r.mode, canal:r.canal, description:r.description,
       contactEmail:r.contact_email, lat:r.lat, lon:r.lon, createdAt:r.created_at, expiresAt:r.expires_at,
-      userId:r.user_id };
+      userId:r.user_id, commission:r.commission };
   }
   function adToRow(a){
     return { id:a.id, ref:a.ref, type:a.type, titre:a.titre, secteur:a.secteur, ville:a.ville,
       zone_couverte:a.zoneCouverte, mode:a.mode, canal:a.canal, description:a.description,
       contact_email:a.contactEmail, lat:a.lat, lon:a.lon, created_at:a.createdAt, expires_at:a.expiresAt,
-      user_id:a.userId };
+      user_id:a.userId, commission:a.commission };
   }
   function rowToProfil(r){
     return { userId:r.user_id, email:r.email, type:r.type, nom:r.nom||"", site:r.site||"", linkedin:r.linkedin||"", instagram:r.instagram||"", facebook:r.facebook||"" };
@@ -389,6 +396,23 @@
     if(supa){ try{ await supa.auth.signOut(); }catch(e){} }
     state.user = null;
   }
+  async function sendPasswordReset(email){
+    if(!supa) return { ok:false, message:"Base de données non configurée." };
+    try{
+      var res = await supa.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + window.location.pathname });
+      if(res.error) throw res.error;
+      return { ok:true };
+    }catch(e){ return { ok:false, message: e.message || "L'envoi a échoué." }; }
+  }
+  async function updatePassword(password){
+    if(!supa) return { ok:false, message:"Base de données non configurée." };
+    try{
+      var res = await supa.auth.updateUser({ password: password });
+      if(res.error) throw res.error;
+      state.user = res.data.user;
+      return { ok:true };
+    }catch(e){ return { ok:false, message: e.message || "La mise à jour a échoué." }; }
+  }
 
   async function geocode(ville){
     if(!ville) return null;
@@ -402,11 +426,20 @@
   }
 
   function activeAds(){ return (state.ads||[]).filter(function(a){ return !isExpired(a); }); }
+  function commissionInRange(a, key){
+    if(!key || key==="tous") return true;
+    if(a.commission===null || a.commission===undefined || a.commission==="") return false;
+    var r = COMMISSION_RANGES.find(function(x){ return x.key===key; });
+    if(!r) return true;
+    var c = parseFloat(a.commission);
+    return c >= r.min && c < r.max;
+  }
   function filteredAds(list, f){
     return (list||[])
       .filter(function(a){ return f.type==="tous" || a.type===f.type; })
       .filter(function(a){ return !f.secteur || a.secteur===f.secteur; })
       .filter(function(a){ return f.mode==="tous" || !f.mode || a.mode===f.mode; })
+      .filter(function(a){ return commissionInRange(a, f.commission); })
       .filter(function(a){ return !f.zone || ((a.ville||"")+" "+(a.zoneCouverte||"")).toLowerCase().includes(f.zone.toLowerCase()); })
       .filter(function(a){ if(!f.q) return true; var hay=(a.titre+" "+a.description+" "+a.secteur).toLowerCase(); return hay.includes(f.q.toLowerCase()); })
       .sort(function(a,b){ return new Date(b.createdAt) - new Date(a.createdAt); });
@@ -464,6 +497,7 @@
     html += '      <div><span class="f-label">Secteur</span><select data-filter="map-secteur"><option value="">Tous secteurs</option>'+optionsHtml(SECTORS,"")+'</select></div>';
     html += '      <div><span class="f-label">Mode</span><select data-filter="map-mode"><option value="tous">Présentiel / distanciel</option>'+optionsHtml(MODES,"")+'</select></div>';
     html += '      <div><span class="f-label">Canal de contact</span><select data-filter="map-canal"><option value="tous">Tous les canaux</option>'+optionsHtml(CANAUX,"")+'</select></div>';
+    html += '      <div><span class="f-label">Commission</span><select data-filter="map-commission"><option value="tous">Toutes commissions</option>'+COMMISSION_RANGES.map(function(r){ return '<option value="'+r.key+'">'+r.label+'</option>'; }).join("")+'</select></div>';
     html += '    </div>';
     html += '    <div>';
     if(ads === null){ html += '<div class="map-empty">Chargement de la carte…</div>'; }
@@ -507,6 +541,7 @@
       if(f.secteur && a.secteur !== f.secteur) return false;
       if(f.mode!=="tous" && f.mode && a.mode !== f.mode) return false;
       if(f.canal!=="tous" && f.canal && a.canal !== f.canal) return false;
+      if(!commissionInRange(a, f.commission)) return false;
       return true;
     }).filter(function(a){ return a.lat && a.lon; });
 
@@ -514,7 +549,7 @@
     matched.forEach(function(a){
       var m = L.marker([a.lat, a.lon], { icon: icon }).addTo(homeMarkers);
       var popup = document.createElement("div");
-      popup.innerHTML = '<b>'+esc(a.titre)+'</b><br/>'+esc(a.secteur)+' · '+esc(a.ville)+'<br/><span style="color:#666B72">'+esc(a.mode)+'</span><br/>'+
+      popup.innerHTML = '<b>'+esc(a.titre)+'</b><br/>'+esc(a.secteur)+' · '+esc(a.ville)+'<br/><span style="color:#666B72">'+esc(a.mode)+(a.commission?' · Commission '+esc(a.commission)+' %':'')+'</span><br/>'+
         '<a href="#" data-action="goto-detail" data-id="'+a.id+'" style="color:#FF5A33;font-weight:600;">Voir l\'annonce →</a>';
       m.bindPopup(popup);
     });
@@ -530,9 +565,10 @@
     html += '<select data-filter="browse-type"><option value="tous"'+(f.type==="tous"?" selected":"")+'>Tous les types</option><option value="entreprise"'+(f.type==="entreprise"?" selected":"")+'>Entreprise recrute</option><option value="agent"'+(f.type==="agent"?" selected":"")+'>Agent disponible</option></select>';
     html += '<select data-filter="browse-secteur"><option value="">Tous secteurs</option>'+optionsHtml(SECTORS, f.secteur)+'</select>';
     html += '<select data-filter="browse-mode"><option value="tous"'+(f.mode==="tous"?" selected":"")+'>Présentiel / distanciel</option>'+optionsHtml(MODES, f.mode==="tous"?"":f.mode)+'</select>';
+    html += '<select data-filter="browse-commission"><option value="tous"'+(f.commission==="tous"?" selected":"")+'>Toutes commissions</option>'+COMMISSION_RANGES.map(function(r){ return '<option value="'+r.key+'"'+(f.commission===r.key?" selected":"")+'>'+r.label+'</option>'; }).join("")+'</select>';
     html += '<input data-filter="browse-zone" placeholder="Ville / zone" value="'+esc(f.zone)+'"/>';
     html += '<input data-filter="browse-q" placeholder="Mot-clé" value="'+esc(f.q)+'"/>';
-    if(f.type!=="tous"||f.secteur||f.zone||f.q||f.mode!=="tous"){ html += '<button class="btn outline sm" data-action="reset-browse-filters">Réinitialiser</button>'; }
+    if(f.type!=="tous"||f.secteur||f.zone||f.q||f.mode!=="tous"||f.commission!=="tous"){ html += '<button class="btn outline sm" data-action="reset-browse-filters">Réinitialiser</button>'; }
     html += '</div>';
     if(state.ads === null){ html += loadingHtml(); }
     else if(list.length===0){ html += '<div class="empty"><strong>Aucune annonce ne correspond.</strong>Essayez d\'élargir vos critères, ou déposez la vôtre.</div>'; }
@@ -546,7 +582,7 @@
       '<div style="flex:1;min-width:0;">'+
         '<div class="ref mono">'+a.ref+'</div>'+
         '<h4>'+esc(a.titre)+'</h4>'+
-        '<div class="ad-meta"><span>'+esc(a.secteur)+'</span><span>'+esc(a.ville||a.zoneCouverte||"")+'</span><span>'+esc(a.mode)+'</span><span>'+timeAgo(a.createdAt)+'</span></div>'+
+        '<div class="ad-meta"><span>'+esc(a.secteur)+'</span><span>'+esc(a.ville||a.zoneCouverte||"")+'</span><span>'+esc(a.mode)+'</span>'+(a.commission?'<span>Commission '+esc(a.commission)+' %</span>':'')+'<span>'+timeAgo(a.createdAt)+'</span></div>'+
       '</div>'+
       '<div class="tags"><span class="pill '+(a.type==="entreprise"?"entreprise":"agent")+'">'+(a.type==="entreprise"?"Entreprise":"Agent")+'</span></div>'+
     '</div>';
@@ -563,7 +599,7 @@
     html += '<div class="fiche">';
     html += '  <div class="fiche-head"><div><span class="ref mono" style="font-size:12px;color:var(--ink-soft)">'+ad.ref+'</span><h2>'+esc(ad.titre)+'</h2></div>';
     html += '  <div class="fiche-tags"><span class="pill '+(ad.type==="entreprise"?"entreprise":"agent")+'">'+(ad.type==="entreprise"?"Entreprise":"Agent")+'</span><span class="pill neutral">'+esc(ad.mode)+'</span>'+(expired?'<span class="pill warn">Expirée</span>':'<span class="pill neutral">Expire dans '+daysLeft(ad)+' j</span>')+'</div></div>';
-    html += '  <div class="fiche-meta"><span>'+esc(ad.secteur)+'</span><span>'+esc(ad.ville)+(ad.zoneCouverte? " · "+esc(ad.zoneCouverte) : "")+'</span><span>Canal préféré : '+esc(ad.canal)+'</span><span>Publiée '+timeAgo(ad.createdAt)+'</span></div>';
+    html += '  <div class="fiche-meta"><span>'+esc(ad.secteur)+'</span><span>'+esc(ad.ville)+(ad.zoneCouverte? " · "+esc(ad.zoneCouverte) : "")+'</span>'+(ad.commission?'<span>Commission proposée : '+esc(ad.commission)+' %</span>':'')+'<span>Canal préféré : '+esc(ad.canal)+'</span><span>Publiée '+timeAgo(ad.createdAt)+'</span></div>';
     html += '  <div class="fiche-desc">'+esc(ad.description)+'</div>';
     var profil = state.profils ? state.profils[(ad.contactEmail||"").toLowerCase()] : null;
     var socialLinks = profil ? SOCIALS.filter(function(s){ return profil[s.key]; }) : [];
@@ -614,6 +650,9 @@
     html += '  <div class="field-row"><div class="field"><span class="field-label">Secteur d\'activité</span><select required name="secteur"><option value="">Choisir…</option>'+optionsHtml(SECTORS,"")+'</select></div>';
     html += '  <div class="field"><span class="field-label">Ville</span><input required name="ville" placeholder="Ex : Nantes"/><span class="field-hint">Utilisée pour vous situer sur la carte.</span></div></div>';
     html += '  <div class="field"><span class="field-label">Zone couverte (optionnel)</span><input name="zoneCouverte" placeholder="Ex : Grand Ouest, national, export…"/></div>';
+    if(t==="entreprise"){
+      html += '  <div class="field"><span class="field-label">Commission proposée (%)</span><input type="number" step="0.5" min="0" max="100" name="commission" placeholder="Ex : 12"/><span class="field-hint">Laisse vide si non déterminée à ce stade.</span></div>';
+    }
     html += '  <div class="field-row"><div class="field"><span class="field-label">Mode de collaboration</span><select required name="mode">'+optionsHtml(MODES,"")+'</select></div>';
     html += '  <div class="field"><span class="field-label">Canal de contact préféré</span><select required name="canal">'+optionsHtml(CANAUX,"")+'</select></div></div>';
     html += '  <div class="field"><span class="field-label">Description</span><textarea required name="description" placeholder="'+(t==="entreprise"?"Produits représentés, type de mandat, commission proposée, portefeuille existant ou non…":"Votre expérience, vos secteurs maîtrisés, votre portefeuille clients, vos disponibilités…")+'"></textarea></div>';
@@ -643,6 +682,9 @@
       }
       html += '  <div class="field"><span class="field-label">Email</span><input required type="email" name="email" placeholder="contact@exemple.fr"/></div>';
       html += '  <div class="field"><span class="field-label">Mot de passe</span><input required type="password" name="password" minlength="6" placeholder="6 caractères minimum"/></div>';
+      if(mode==="login"){
+        html += '  <div><span class="link-more" data-action="forgot-password" style="font-weight:500;">Mot de passe oublié ?</span></div>';
+      }
       html += '  <div><button class="btn accent" type="submit">'+(mode==="signup"?"Créer mon compte":"Se connecter")+'</button></div>';
       html += '</form>';
       html += '</div>';
@@ -689,6 +731,18 @@
       }).join("") + '</div>';
     }
     html += '</div>';
+    return html;
+  }
+
+  /* ---------- RENDER: NOUVEAU MOT DE PASSE ---------- */
+  function renderResetPassword(){
+    var html = '<div class="post-page" style="padding-top:26px;">';
+    html += '<div class="section-head" style="margin-top:0;"><div><h2>Choisir un nouveau mot de passe</h2><p>Tu arrives depuis le lien reçu par email.</p></div></div>';
+    html += '<form class="card-form" data-form="reset-password">';
+    html += '  <div class="field"><span class="field-label">Nouveau mot de passe</span><input required type="password" name="password" minlength="6" placeholder="6 caractères minimum"/></div>';
+    html += '  <div class="field"><span class="field-label">Confirmer le mot de passe</span><input required type="password" name="password2" minlength="6" placeholder="Retape le même mot de passe"/></div>';
+    html += '  <div><button class="btn accent" type="submit">Enregistrer le nouveau mot de passe</button></div>';
+    html += '</form></div>';
     return html;
   }
 
@@ -746,6 +800,7 @@
     else if(state.view==="post") out += renderPost();
     else if(state.view==="legal") out += renderLegal();
     else if(state.view==="account") out += renderAccount();
+    else if(state.view==="reset-password") out += renderResetPassword();
 
     root.innerHTML = out;
     document.querySelectorAll(".navlink[data-nav]").forEach(function(n){ n.classList.toggle("active", n.getAttribute("data-nav")===state.view); });
@@ -759,7 +814,9 @@
   var FILTER_MAP = {
     "browse-type": ["browseFilters","type"], "browse-secteur": ["browseFilters","secteur"],
     "browse-mode": ["browseFilters","mode"], "browse-zone": ["browseFilters","zone"], "browse-q": ["browseFilters","q"],
-    "map-loc": ["mapFilters","loc"], "map-secteur": ["mapFilters","secteur"], "map-mode": ["mapFilters","mode"], "map-canal": ["mapFilters","canal"]
+    "browse-commission": ["browseFilters","commission"],
+    "map-loc": ["mapFilters","loc"], "map-secteur": ["mapFilters","secteur"], "map-mode": ["mapFilters","mode"], "map-canal": ["mapFilters","canal"],
+    "map-commission": ["mapFilters","commission"]
   };
 
   document.addEventListener("click", async function(e){
@@ -770,9 +827,18 @@
     else if(action==="goto-detail"){ e.preventDefault(); goto("detail", t.getAttribute("data-id")); }
     else if(action==="start-post"){ state.postType = t.getAttribute("data-type"); goto("post"); }
     else if(action==="set-post-type"){ state.postType = t.getAttribute("data-type"); renderView(); }
-    else if(action==="reset-browse-filters"){ state.browseFilters = { type:"tous", secteur:"", zone:"", mode:"tous", q:"" }; renderView(); }
+    else if(action==="reset-browse-filters"){ state.browseFilters = { type:"tous", secteur:"", zone:"", mode:"tous", commission:"tous", q:"" }; renderView(); }
     else if(action==="home-search"){ var v = document.getElementById("home-q"); state.browseFilters.q = v?v.value:""; goto("browse"); }
     else if(action==="set-auth-mode"){ state.authMode = t.getAttribute("data-mode"); renderView(); }
+    else if(action==="forgot-password"){
+      var form = t.closest("form");
+      var email = form && form.email ? form.email.value.trim() : "";
+      if(!email){ state.error = "Renseigne d'abord ton email dans le champ ci-dessus, puis clique à nouveau."; renderView(); return; }
+      var res = await sendPasswordReset(email);
+      if(res.ok){ state.flash = "Email envoyé — clique sur le lien reçu pour choisir un nouveau mot de passe."; }
+      else{ state.error = res.message; }
+      renderView();
+    }
     else if(action==="logout"){ await signOutUser(); renderView(); }
     else if(action==="set-account-type"){
       if(!state.user || !state.profils) return;
@@ -827,7 +893,8 @@
         mode: form.mode.value,
         canal: form.canal.value,
         description: form.description.value.trim(),
-        contactEmail: form.contactEmail.value.trim()
+        contactEmail: form.contactEmail.value.trim(),
+        commission: (form.commission && form.commission.value !== "") ? parseFloat(form.commission.value) : null
       };
       var newAd = await publishAd(ad);
       btn.disabled = false; btn.innerHTML = original;
@@ -875,6 +942,20 @@
       }
       renderView();
     }
+    else if(form.getAttribute && form.getAttribute("data-form")==="reset-password"){
+      e.preventDefault();
+      if(form.password.value !== form.password2.value){ state.error = "Les deux mots de passe ne sont pas identiques."; renderView(); return; }
+      var btn = form.querySelector("button[type=submit]");
+      var original = btn.innerHTML;
+      btn.disabled = true; btn.innerHTML = '<span class="spin"></span> Enregistrement…';
+      var res = await updatePassword(form.password.value);
+      btn.disabled = false; btn.innerHTML = original;
+      if(res.ok){
+        history.replaceState(null, "", window.location.pathname);
+        state.flash = "Mot de passe mis à jour.";
+        goto("account");
+      } else { state.error = res.message; renderView(); }
+    }
     else if(form.getAttribute && form.getAttribute("data-form")==="account-profile"){
       e.preventDefault();
       if(!state.user) return;
@@ -894,6 +975,15 @@
   /* ---------- INIT ---------- */
   async function init(){
     await Promise.all([loadAds(), loadProfils(), loadUser()]);
+    if(supa){
+      supa.auth.onAuthStateChange(function(event, session){
+        if(event === "PASSWORD_RECOVERY"){
+          state.user = session ? session.user : state.user;
+          state.view = "reset-password";
+          renderView();
+        }
+      });
+    }
     renderView();
   }
   init();
