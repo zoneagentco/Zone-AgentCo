@@ -153,10 +153,6 @@
 
   .post-page{ max-width:640px; margin:0 auto; }
 
-  .paywall-note{ display:flex; align-items:center; justify-content:space-between; gap:14px; background:var(--gold-soft); border:1px solid #E7D8A8; border-radius:var(--radius); padding:16px 20px; margin-bottom:20px; flex-wrap:wrap; }
-  .paywall-note b{ font-family:'Sora',sans-serif; font-size:15px; color:#5C4712; }
-  .paywall-note span{ font-size:12.5px; color:#7A5F1C; }
-
   .banner{ display:flex; align-items:center; justify-content:space-between; gap:14px; background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius); padding:14px 18px; margin-bottom:20px; flex-wrap:wrap; font-size:13.5px; }
 
   .flash{ background:var(--teal); color:#fff; padding:12px 18px; border-radius:var(--radius-sm); margin-bottom:20px; font-size:13.5px; display:flex; align-items:center; gap:8px; }
@@ -218,7 +214,7 @@
 
   <footer class="shell">
     <p>AgentZone — plateforme minimaliste de mise en relation. Pas de compte, pas de suivi.</p>
-    <p>Annonce entreprise : 20&nbsp;€ · Annonce agent commercial : 5&nbsp;€ · Validité 3 mois.</p>
+    <p>Publication gratuite · Compte requis pour publier · Annonces valables 3 mois.</p>
     <p><span class="footer-link" data-action="goto" data-view="legal">Mentions légales &amp; confidentialité (RGPD)</span></p>
   </footer>
 </div>
@@ -229,19 +225,6 @@
 (function(){
   "use strict";
 
-  /* ====== À CONFIGURER AVANT MISE EN LIGNE ======
-     1. Dans le Dashboard Stripe, crée deux "Payment Links" (Paiements > Liens de paiement) :
-        - un produit "Annonce entreprise — AgentZone" à 20,00 €
-        - un produit "Annonce agent commercial — AgentZone" à 5,00 €
-     2. Pour chaque lien, dans "Après paiement" > "Rediriger les clients vers votre site",
-        mets l'URL de ton site suivie de ?paid=success (ex : https://agentzone.fr/?paid=success)
-     3. Colle les deux URLs de Payment Link ci-dessous. */
-  var STRIPE_LINKS = {
-    entreprise: "https://buy.stripe.com/REMPLACER_LIEN_ENTREPRISE_20E",
-    agent: "https://buy.stripe.com/REMPLACER_LIEN_AGENT_5E"
-  };
-  var PRICES = { entreprise: "20 €", agent: "5 €" };
-  var STRIPE_CONFIGURED = STRIPE_LINKS.entreprise.indexOf("REMPLACER") === -1 && STRIPE_LINKS.agent.indexOf("REMPLACER") === -1;
   var AD_DURATION_DAYS = 90;
 
   /* ====== BASE DE DONNÉES (Supabase) — À CONFIGURER ======
@@ -276,9 +259,9 @@
     browseFilters: { type:"tous", secteur:"", zone:"", mode:"tous", q:"" },
     mapFilters: { loc:"", secteur:"", mode:"tous", canal:"tous" },
     flash: "", error: "",
-    pendingAd: undefined, /* undefined = not checked yet */
-    session: undefined,   /* email connecté sur cet appareil, ou null */
-    profils: null         /* { "email@x.fr": {type,nom,site,linkedin,...} } */
+    user: undefined,       /* utilisateur Supabase Auth connecté ({id,email}), null si déconnecté */
+    authMode: "login",     /* "login" ou "signup", pour l'écran Mon compte */
+    profils: null          /* { "user-id": {userId,email,type,nom,site,linkedin,...} } */
   };
 
   var homeMap = null, homeMarkers = null;
@@ -307,15 +290,17 @@
   function rowToAd(r){
     return { id:r.id, ref:r.ref, type:r.type, titre:r.titre, secteur:r.secteur, ville:r.ville,
       zoneCouverte:r.zone_couverte, mode:r.mode, canal:r.canal, description:r.description,
-      contactEmail:r.contact_email, lat:r.lat, lon:r.lon, createdAt:r.created_at, expiresAt:r.expires_at };
+      contactEmail:r.contact_email, lat:r.lat, lon:r.lon, createdAt:r.created_at, expiresAt:r.expires_at,
+      userId:r.user_id };
   }
   function adToRow(a){
     return { id:a.id, ref:a.ref, type:a.type, titre:a.titre, secteur:a.secteur, ville:a.ville,
       zone_couverte:a.zoneCouverte, mode:a.mode, canal:a.canal, description:a.description,
-      contact_email:a.contactEmail, lat:a.lat, lon:a.lon, created_at:a.createdAt, expires_at:a.expiresAt };
+      contact_email:a.contactEmail, lat:a.lat, lon:a.lon, created_at:a.createdAt, expires_at:a.expiresAt,
+      user_id:a.userId };
   }
   function rowToProfil(r){
-    return { email:r.email, type:r.type, nom:r.nom||"", site:r.site||"", linkedin:r.linkedin||"", instagram:r.instagram||"", facebook:r.facebook||"" };
+    return { userId:r.user_id, email:r.email, type:r.type, nom:r.nom||"", site:r.site||"", linkedin:r.linkedin||"", instagram:r.instagram||"", facebook:r.facebook||"" };
   }
 
   async function loadAds(){
@@ -346,35 +331,60 @@
       var res = await supa.from("profils").select("*");
       if(res.error) throw res.error;
       var map = {};
-      (res.data||[]).forEach(function(r){ map[r.email.toLowerCase()] = rowToProfil(r); });
+      (res.data||[]).forEach(function(r){ map[r.user_id] = rowToProfil(r); });
       state.profils = map;
     }catch(e){ state.profils = {}; }
   }
   async function saveProfil(profil){
-    if(!supa) return false;
+    if(!supa || !state.user) return false;
     try{
-      var row = Object.assign({}, profil, { email: profil.email.toLowerCase(), updated_at: new Date().toISOString() });
-      var res = await supa.from("profils").upsert(row, { onConflict: "email" });
+      var row = { user_id: state.user.id, email: state.user.email, type: profil.type, nom: profil.nom||"",
+        site: profil.site||"", linkedin: profil.linkedin||"", instagram: profil.instagram||"", facebook: profil.facebook||"",
+        updated_at: new Date().toISOString() };
+      var res = await supa.from("profils").upsert(row, { onConflict: "user_id" });
       if(res.error) throw res.error;
-      state.profils[row.email] = profil;
+      state.profils[state.user.id] = rowToProfil(row);
       return true;
     }catch(e){ state.error = "La sauvegarde du profil a échoué, réessayez."; return false; }
   }
   async function upsertProfilFromAd(ad){
-    if(!ad.contactEmail || !state.profils) return;
-    var key = ad.contactEmail.toLowerCase();
-    var existing = state.profils[key] || { email: ad.contactEmail, type: ad.type, nom:"", site:"", linkedin:"", instagram:"", facebook:"" };
+    if(!state.user || !state.profils) return;
+    var existing = state.profils[state.user.id] || { type: ad.type, nom:"", site:"", linkedin:"", instagram:"", facebook:"" };
     existing.type = ad.type;
     await saveProfil(existing);
   }
 
-  /* Session et annonce en attente : propres à cet appareil, pas partagées -> localStorage */
-  function loadSession(){ try{ state.session = localStorage.getItem("agentzone_session") || null; }catch(e){ state.session = null; } }
-  function setSession(email){ state.session = email; try{ localStorage.setItem("agentzone_session", email); }catch(e){} }
-  function clearSession(){ state.session = null; try{ localStorage.removeItem("agentzone_session"); }catch(e){} }
-  function loadPendingAd(){ try{ var v = localStorage.getItem("agentzone_pending_ad"); state.pendingAd = v ? JSON.parse(v) : null; }catch(e){ state.pendingAd = null; } }
-  function savePendingAd(ad){ try{ localStorage.setItem("agentzone_pending_ad", JSON.stringify(ad)); return true; }catch(e){ return false; } }
-  function clearPendingAd(){ try{ localStorage.removeItem("agentzone_pending_ad"); }catch(e){} state.pendingAd = null; }
+  /* ---------- AUTHENTIFICATION (Supabase Auth) ---------- */
+  async function loadUser(){
+    if(!supa){ state.user = null; return; }
+    try{
+      var res = await supa.auth.getSession();
+      state.user = (res.data && res.data.session) ? res.data.session.user : null;
+    }catch(e){ state.user = null; }
+  }
+  async function signUp(email, password){
+    if(!supa) return { ok:false, message:"Base de données non configurée." };
+    try{
+      var res = await supa.auth.signUp({ email:email, password:password });
+      if(res.error) throw res.error;
+      if(res.data.session){ state.user = res.data.session.user; return { ok:true, confirmed:true }; }
+      return { ok:true, confirmed:false };
+    }catch(e){ return { ok:false, message: e.message || "La création du compte a échoué." }; }
+  }
+  async function signIn(email, password){
+    if(!supa) return { ok:false, message:"Base de données non configurée." };
+    try{
+      var res = await supa.auth.signInWithPassword({ email:email, password:password });
+      if(res.error) throw res.error;
+      state.user = res.data.user;
+      return { ok:true };
+    }catch(e){ return { ok:false, message: e.message === "Invalid login credentials" ? "Email ou mot de passe incorrect." : (e.message || "La connexion a échoué.") }; }
+  }
+  async function signOutUser(){
+    if(supa){ try{ await supa.auth.signOut(); }catch(e){} }
+    state.user = null;
+  }
+
   async function geocode(ville){
     if(!ville) return null;
     try{
@@ -397,28 +407,16 @@
       .sort(function(a,b){ return new Date(b.createdAt) - new Date(a.createdAt); });
   }
 
-  /* ---------- PAIEMENT ---------- */
-  async function goToPayment(ad){
-    var ok = await savePendingAd(ad);
-    if(!ok){ state.error = "Impossible de préparer votre annonce, réessayez."; renderView(); return; }
-    if(!STRIPE_CONFIGURED){
-      state.error = "Le paiement Stripe n'est pas encore configuré sur ce site (liens de paiement manquants).";
-      renderView();
-      return;
-    }
-    var token = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
-    window.location.href = STRIPE_LINKS[ad.type] + "?client_reference_id=" + token;
-  }
-
-  async function finalizePendingAd(){
-    if(!state.pendingAd) return null;
-    var ad = state.pendingAd;
+  /* ---------- PUBLICATION ---------- */
+  async function publishAd(ad){
+    if(!state.user){ state.error = "Connecte-toi pour publier une annonce."; return null; }
     var geo = await geocode(ad.ville);
     var now = new Date();
     var expires = new Date(now.getTime() + AD_DURATION_DAYS*86400000);
     var candidate = Object.assign({}, ad, {
       id: (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())+Math.random()),
       ref: ref(),
+      userId: state.user.id,
       createdAt: now.toISOString(),
       expiresAt: expires.toISOString(),
       lat: geo ? geo.lat : null,
@@ -427,7 +425,6 @@
     var res = await insertAd(candidate);
     if(!res.ok) return null;
     state.ads = [res.ad].concat(state.ads||[]);
-    clearPendingAd();
     return res.ad;
   }
 
@@ -439,21 +436,14 @@
     var entreprises = active.filter(function(a){ return a.type==="entreprise"; });
 
     var html = "";
-    if(state.pendingAd){
-      html += '<div class="banner"><span>Vous avez une annonce en attente de paiement (<b>'+esc(state.pendingAd.titre)+'</b>).</span>'+
-        '<span style="display:flex;gap:8px;">'+
-          '<button class="btn sm accent" data-action="resume-payment">Reprendre le paiement</button>'+
-          '<button class="btn sm outline" data-action="discard-pending">Abandonner</button>'+
-        '</span></div>';
-    }
 
     html += '<section class="hero">';
     html += '  <div class="hero-top"><svg class="connector" viewBox="0 0 64 22" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="8" cy="16" r="5" fill="#0F7A6A"/><circle cx="56" cy="6" r="5" fill="#FF5A33"/><path d="M13 15 51 7" stroke="#C9C8BE" stroke-width="2" class="dash-move" stroke-linecap="round"/></svg></div>';
     html += '  <h1 class="display">Le point de rendez-vous des agents commerciaux et des entreprises.</h1>';
     html += '  <p class="lead">Une entreprise cherche un agent pour porter ses produits sur un secteur. Un agent cherche une entreprise à représenter. Ici, ils se trouvent — sans intermédiaire, sans abonnement, sans fichier client à remplir.</p>';
     html += '  <div class="pitch-row">';
-    html += '    <div class="pitch-card a" data-action="start-post" data-type="entreprise"><div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="9" width="18" height="12" rx="1"/><path d="M9 21V9l3-5 3 5v12"/></svg></div><h3>Je suis une entreprise</h3><p>Je cherche un agent commercial pour représenter mes produits sur un secteur.</p><div class="price-tag">20 € l\'annonce · valable 3 mois</div></div>';
-    html += '    <div class="pitch-card b" data-action="start-post" data-type="agent"><div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg></div><h3>Je suis agent commercial</h3><p>Je cherche une entreprise à représenter, sur mon secteur et ma zone.</p><div class="price-tag">5 € l\'annonce · valable 3 mois</div></div>';
+    html += '    <div class="pitch-card a" data-action="start-post" data-type="entreprise"><div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="9" width="18" height="12" rx="1"/><path d="M9 21V9l3-5 3 5v12"/></svg></div><h3>Je suis une entreprise</h3><p>Je cherche un agent commercial pour représenter mes produits sur un secteur.</p></div>';
+    html += '    <div class="pitch-card b" data-action="start-post" data-type="agent"><div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg></div><h3>Je suis agent commercial</h3><p>Je cherche une entreprise à représenter, sur mon secteur et ma zone.</p></div>';
     html += '  </div>';
     html += '  <div class="search-bar"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#666B72" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>';
     html += '    <input id="home-q" data-filter="home-q" placeholder="Un secteur, une ville, un mot-clé…" />';
@@ -600,14 +590,18 @@
   function renderPost(){
     var t = state.postType;
     var html = '<div class="post-page" style="padding-top:26px;">';
-    html += '<div class="section-head" style="margin-top:0;"><div><h2>Déposer une annonce</h2></div></div>';
-    html += '<div class="paywall-note"><div><b>'+PRICES[t]+' pour publier</b><br/><span>Paiement sécurisé par Stripe · annonce visible 3 mois</span></div></div>';
-    if(!STRIPE_CONFIGURED){
-      html += '<div class="err">Le paiement n\'est pas encore configuré sur ce site (lien Stripe manquant côté administrateur).</div>';
+    html += '<div class="section-head" style="margin-top:0;"><div><h2>Déposer une annonce</h2><p>Publication gratuite, valable 3 mois.</p></div></div>';
+
+    if(!state.user){
+      html += '<div class="empty"><strong>Connecte-toi pour publier une annonce.</strong>Un compte gratuit permet de gérer tes annonces et d\'y associer tes réseaux sociaux.'+
+        '<div style="margin-top:16px;"><span class="btn accent" data-action="goto" data-view="account">Se connecter / créer un compte</span></div></div>';
+      html += '</div>';
+      return html;
     }
+
     html += '<div class="type-toggle">';
-    html += '  <div class="type-opt'+(t==="entreprise"?" on":"")+'" data-action="set-post-type" data-type="entreprise"><strong>Entreprise</strong><small>Je recherche un agent commercial · 20 €</small></div>';
-    html += '  <div class="type-opt'+(t==="agent"?" on":"")+'" data-action="set-post-type" data-type="agent"><strong>Agent commercial</strong><small>Je recherche une entreprise à représenter · 5 €</small></div>';
+    html += '  <div class="type-opt'+(t==="entreprise"?" on":"")+'" data-action="set-post-type" data-type="entreprise"><strong>Entreprise</strong><small>Je recherche un agent commercial</small></div>';
+    html += '  <div class="type-opt'+(t==="agent"?" on":"")+'" data-action="set-post-type" data-type="agent"><strong>Agent commercial</strong><small>Je recherche une entreprise à représenter</small></div>';
     html += '</div>';
     html += '<form class="card-form" data-form="post" style="margin-top:20px;">';
     html += '  <div class="field"><span class="field-label">Titre de l\'annonce</span><input required name="titre" placeholder="'+(t==="entreprise"?"Ex : Agent commercial cosmétique bio — Grand Ouest":"Ex : Agent expérimenté BTP cherche mandat en Bretagne")+'"/></div>';
@@ -617,8 +611,8 @@
     html += '  <div class="field-row"><div class="field"><span class="field-label">Mode de collaboration</span><select required name="mode">'+optionsHtml(MODES,"")+'</select></div>';
     html += '  <div class="field"><span class="field-label">Canal de contact préféré</span><select required name="canal">'+optionsHtml(CANAUX,"")+'</select></div></div>';
     html += '  <div class="field"><span class="field-label">Description</span><textarea required name="description" placeholder="'+(t==="entreprise"?"Produits représentés, type de mandat, commission proposée, portefeuille existant ou non…":"Votre expérience, vos secteurs maîtrisés, votre portefeuille clients, vos disponibilités…")+'"></textarea></div>';
-    html += '  <div class="field"><span class="field-label">Email de contact</span><input required type="email" name="contactEmail" value="'+esc(state.session||"")+'" placeholder="contact@exemple.fr"/><span class="field-hint">Utilisé uniquement pour recevoir les messages des personnes intéressées'+(state.session?' — retrouvez cette annonce dans « Mon compte ».':'.')+'</span></div>';
-    html += '  <div><button class="btn accent" type="submit">Payer '+PRICES[t]+' et publier</button></div>';
+    html += '  <div class="field"><span class="field-label">Email de contact</span><input required type="email" name="contactEmail" value="'+esc(state.user.email||"")+'" placeholder="contact@exemple.fr"/><span class="field-hint">Utilisé pour recevoir les messages des personnes intéressées.</span></div>';
+    html += '  <div><button class="btn accent" type="submit">Publier l\'annonce</button></div>';
     html += '</form></div>';
     return html;
   }
@@ -628,22 +622,32 @@
     var html = '<div class="post-page" style="padding-top:26px;">';
     html += '<div class="section-head" style="margin-top:0;"><div><h2>Mon compte</h2><p>Retrouvez vos annonces et vos informations de contact.</p></div></div>';
 
-    if(!state.session){
-      html += '<div class="legal-note">Cet espace n\'est pas protégé par un mot de passe : il retrouve simplement vos annonces à partir de votre adresse email, sur cet appareil. Ce n\'est pas une protection contre l\'usurpation — une vraie sécurité nécessitera un système de comptes plus robuste.</div>';
-      html += '<form class="card-form" data-form="account-login">';
-      html += '  <div class="field"><span class="field-label">Votre email</span><input required type="email" name="email" placeholder="contact@exemple.fr"/><span class="field-hint">Le même email que celui utilisé pour publier vos annonces.</span></div>';
-      html += '  <div><button class="btn accent" type="submit">Accéder à mon espace</button></div>';
+    if(!state.user){
+      var mode = state.authMode || "login";
+      html += '<div class="type-toggle">';
+      html += '  <div class="type-opt'+(mode==="login"?" on":"")+'" data-action="set-auth-mode" data-mode="login"><strong>Se connecter</strong></div>';
+      html += '  <div class="type-opt'+(mode==="signup"?" on":"")+'" data-action="set-auth-mode" data-mode="signup"><strong>Créer un compte</strong></div>';
+      html += '</div>';
+      html += '<form class="card-form" data-form="'+(mode==="signup"?"account-signup":"account-login")+'" style="margin-top:20px;">';
+      if(mode==="signup"){
+        html += '  <div class="type-toggle">';
+        html += '    <div class="type-opt'+(state.postType==="entreprise"?" on":"")+'" data-action="set-post-type" data-type="entreprise"><strong>Entreprise</strong></div>';
+        html += '    <div class="type-opt'+(state.postType==="agent"?" on":"")+'" data-action="set-post-type" data-type="agent"><strong>Agent commercial</strong></div>';
+        html += '  </div>';
+      }
+      html += '  <div class="field"><span class="field-label">Email</span><input required type="email" name="email" placeholder="contact@exemple.fr"/></div>';
+      html += '  <div class="field"><span class="field-label">Mot de passe</span><input required type="password" name="password" minlength="6" placeholder="6 caractères minimum"/></div>';
+      html += '  <div><button class="btn accent" type="submit">'+(mode==="signup"?"Créer mon compte":"Se connecter")+'</button></div>';
       html += '</form>';
       html += '</div>';
       return html;
     }
 
-    var key = state.session.toLowerCase();
-    var profil = (state.profils && state.profils[key]) || { email: state.session, type:"entreprise", nom:"", site:"", linkedin:"", instagram:"", facebook:"" };
-    var myAds = (state.ads||[]).filter(function(a){ return (a.contactEmail||"").toLowerCase()===key; })
+    var profil = (state.profils && state.profils[state.user.id]) || { email: state.user.email, type:"entreprise", nom:"", site:"", linkedin:"", instagram:"", facebook:"" };
+    var myAds = (state.ads||[]).filter(function(a){ return a.userId===state.user.id; })
       .sort(function(a,b){ return new Date(b.createdAt)-new Date(a.createdAt); });
 
-    html += '<div class="banner"><span>Connecté en tant que <b>'+esc(state.session)+'</b></span><button class="btn sm outline" data-action="logout">Se déconnecter</button></div>';
+    html += '<div class="banner"><span>Connecté en tant que <b>'+esc(state.user.email)+'</b></span><button class="btn sm outline" data-action="logout">Se déconnecter</button></div>';
 
     html += '<div class="section-head" style="margin-top:34px;"><div><h2 style="font-size:17px;">Mes informations</h2></div></div>';
     html += '<form class="card-form" data-form="account-profile">';
@@ -662,7 +666,7 @@
 
     html += '<div class="section-head"><div><h2 style="font-size:17px;">Mes annonces ('+myAds.length+')</h2></div><span class="link-more" data-action="goto" data-view="post">+ Nouvelle annonce</span></div>';
     if(myAds.length===0){
-      html += '<div class="empty"><strong>Aucune annonce publiée avec cet email pour l\'instant.</strong></div>';
+      html += '<div class="empty"><strong>Aucune annonce publiée avec ce compte pour l\'instant.</strong></div>';
     } else {
       html += '<div class="ad-grid">' + myAds.map(function(a){
         var exp = isExpired(a);
@@ -692,7 +696,7 @@
 
     html += '<div class="legal-block"><h3>1. Éditeur du site</h3><p>Le site AgentZone est édité par <span class="legal-fill">[Nom / raison sociale]</span>, <span class="legal-fill">[statut juridique, ex. auto-entrepreneur, SASU…]</span>, immatriculé sous le numéro SIRET <span class="legal-fill">[n° SIRET]</span>, dont le siège est situé <span class="legal-fill">[adresse complète]</span>. Directeur de la publication : <span class="legal-fill">[Nom]</span>. Contact : <span class="legal-fill">[email de contact]</span>.</p></div>';
 
-    html += '<div class="legal-block"><h3>2. Hébergement</h3><p>Le site est hébergé par Vercel Inc., 340 S Lemon Ave #4133, Walnut, CA 91789, États-Unis. La carte est fournie par OpenStreetMap (fondation OpenStreetMap). Les paiements sont traités par Stripe Payments Europe, Ltd., 1 Grand Canal Street Lower, Dublin, Irlande.</p></div>';
+    html += '<div class="legal-block"><h3>2. Hébergement</h3><p>Le site est hébergé par Vercel Inc., 340 S Lemon Ave #4133, Walnut, CA 91789, États-Unis. La base de données et l\'authentification sont fournies par Supabase Inc. La carte est fournie par OpenStreetMap (fondation OpenStreetMap).</p></div>';
 
     html += '<div class="legal-block"><h3>3. Propriété intellectuelle</h3><p>La structure du site, son design et ses textes sont la propriété de l\'éditeur. Le contenu de chaque annonce (titre, description) reste la propriété de son auteur, qui est seul responsable des informations qu\'il publie.</p></div>';
 
@@ -701,12 +705,12 @@
     html += '<p><b>Données collectées :</b></p><ul>';
     html += '<li>Lors du dépôt d\'une annonce : nom de la ville, secteur d\'activité, description, adresse email de contact.</li>';
     html += '<li>Lors d\'une prise de contact : nom, email et message saisis dans le formulaire (envoyés directement à l\'auteur de l\'annonce via votre messagerie — ils ne transitent pas par nos serveurs et ne sont pas stockés par le site).</li>';
-    html += '<li>Lors du paiement : les données bancaires sont saisies directement sur la page sécurisée de Stripe et ne sont jamais transmises à AgentZone.</li>';
+    html += '<li>Lors de la création d\'un compte : email et mot de passe (le mot de passe n\'est jamais stocké en clair, il est géré de façon sécurisée par Supabase).</li>';
     html += '</ul>';
     html += '<p><b>Finalité :</b> permettre la mise en relation entre entreprises et agents commerciaux, et le paiement de la publication d\'une annonce.</p>';
     html += '<p><b>Base légale :</b> exécution d\'une prestation demandée par l\'utilisateur (publication d\'une annonce payante).</p>';
-    html += '<p><b>Durée de conservation :</b> chaque annonce est automatiquement supprimée de l\'affichage 3 mois après sa publication. Les données de paiement sont conservées par Stripe selon ses propres obligations légales.</p>';
-    html += '<p><b>Destinataires :</b> Stripe (paiement), OpenStreetMap / Nominatim (localisation approximative de la ville renseignée).</p>';
+    html += '<p><b>Durée de conservation :</b> chaque annonce est automatiquement supprimée de l\'affichage 3 mois après sa publication. Le compte (email, informations de profil) est conservé jusqu\'à demande de suppression par son titulaire.</p>';
+    html += '<p><b>Destinataires :</b> Supabase (hébergement de la base de données et des comptes), OpenStreetMap / Nominatim (localisation approximative de la ville renseignée).</p>';
     html += '<p><b>Vos droits :</b> conformément au RGPD, vous disposez d\'un droit d\'accès, de rectification, d\'effacement, de limitation et d\'opposition sur vos données. Pour l\'exercer, écrivez à <span class="legal-fill">[email dédié RGPD]</span>.</p>';
     html += '<p><b>Transferts hors UE :</b> l\'hébergement (Vercel) peut impliquer un transfert de données vers les États-Unis, encadré par les clauses contractuelles types de la Commission européenne.</p></div>';
 
@@ -762,14 +766,12 @@
     else if(action==="set-post-type"){ state.postType = t.getAttribute("data-type"); renderView(); }
     else if(action==="reset-browse-filters"){ state.browseFilters = { type:"tous", secteur:"", zone:"", mode:"tous", q:"" }; renderView(); }
     else if(action==="home-search"){ var v = document.getElementById("home-q"); state.browseFilters.q = v?v.value:""; goto("browse"); }
-    else if(action==="resume-payment"){ if(state.pendingAd) goToPayment(state.pendingAd); }
-    else if(action==="discard-pending"){ await clearPendingAd(); renderView(); }
-    else if(action==="logout"){ await clearSession(); renderView(); }
+    else if(action==="set-auth-mode"){ state.authMode = t.getAttribute("data-mode"); renderView(); }
+    else if(action==="logout"){ await signOutUser(); renderView(); }
     else if(action==="set-account-type"){
-      if(!state.session || !state.profils) return;
-      var k = state.session.toLowerCase();
-      if(!state.profils[k]) state.profils[k] = { email: state.session, type:"entreprise", nom:"", site:"", linkedin:"", instagram:"", facebook:"" };
-      state.profils[k].type = t.getAttribute("data-type");
+      if(!state.user || !state.profils) return;
+      if(!state.profils[state.user.id]) state.profils[state.user.id] = { email: state.user.email, type:"entreprise", nom:"", site:"", linkedin:"", instagram:"", facebook:"" };
+      state.profils[state.user.id].type = t.getAttribute("data-type");
       renderView();
     }
     else if(action==="withdraw-ad"){
@@ -809,7 +811,7 @@
       e.preventDefault();
       var btn = form.querySelector("button[type=submit]");
       var original = btn.innerHTML;
-      btn.disabled = true; btn.innerHTML = '<span class="spin"></span> Préparation du paiement…';
+      btn.disabled = true; btn.innerHTML = '<span class="spin"></span> Publication…';
       var ad = {
         type: state.postType,
         titre: form.titre.value.trim(),
@@ -821,10 +823,13 @@
         description: form.description.value.trim(),
         contactEmail: form.contactEmail.value.trim()
       };
-      state.pendingAd = ad;
-      await upsertProfilFromAd(ad);
-      await goToPayment(ad);
+      var newAd = await publishAd(ad);
       btn.disabled = false; btn.innerHTML = original;
+      if(newAd){
+        await upsertProfilFromAd(ad);
+        state.flash = "Votre annonce a été publiée.";
+        goto("detail", newAd.id);
+      } else { renderView(); }
     }
     else if(form.getAttribute && form.getAttribute("data-form")==="contact"){
       e.preventDefault();
@@ -839,17 +844,36 @@
     }
     else if(form.getAttribute && form.getAttribute("data-form")==="account-login"){
       e.preventDefault();
-      var email = form.email.value.trim();
-      if(!email) return;
-      await setSession(email);
+      var btn = form.querySelector("button[type=submit]");
+      var original = btn.innerHTML;
+      btn.disabled = true; btn.innerHTML = '<span class="spin"></span> Connexion…';
+      var res = await signIn(form.email.value.trim(), form.password.value);
+      btn.disabled = false; btn.innerHTML = original;
+      if(!res.ok){ state.error = res.message; }
+      renderView();
+    }
+    else if(form.getAttribute && form.getAttribute("data-form")==="account-signup"){
+      e.preventDefault();
+      var btn = form.querySelector("button[type=submit]");
+      var original = btn.innerHTML;
+      btn.disabled = true; btn.innerHTML = '<span class="spin"></span> Création…';
+      var res = await signUp(form.email.value.trim(), form.password.value);
+      btn.disabled = false; btn.innerHTML = original;
+      if(!res.ok){ state.error = res.message; }
+      else if(res.confirmed){
+        await saveProfil({ type: state.postType, nom:"", site:"", linkedin:"", instagram:"", facebook:"" });
+        state.flash = "Compte créé, bienvenue !";
+      } else {
+        state.flash = "Compte créé — vérifie ta boîte mail pour confirmer ton adresse avant de te connecter.";
+        state.authMode = "login";
+      }
       renderView();
     }
     else if(form.getAttribute && form.getAttribute("data-form")==="account-profile"){
       e.preventDefault();
-      if(!state.session) return;
-      var pk = state.session.toLowerCase();
-      var current = state.profils[pk] || { email: state.session, type:"entreprise" };
-      var updated = Object.assign({}, current, { email: state.session, nom: form.nom.value.trim() });
+      if(!state.user) return;
+      var current = state.profils[state.user.id] || { type:"entreprise" };
+      var updated = Object.assign({}, current, { nom: form.nom.value.trim() });
       SOCIALS.forEach(function(s){ updated[s.key] = form[s.key].value.trim(); });
       var btn = form.querySelector("button[type=submit]");
       var original = btn.innerHTML;
@@ -863,16 +887,7 @@
 
   /* ---------- INIT ---------- */
   async function init(){
-    await Promise.all([loadAds(), loadPendingAd(), loadProfils(), loadSession()]);
-    var params = new URLSearchParams(window.location.search);
-    if(params.get("paid")==="success" && state.pendingAd){
-      var newAd = await finalizePendingAd();
-      history.replaceState(null, "", window.location.pathname);
-      if(newAd){ state.flash = "Paiement reçu — votre annonce est publiée pour 3 mois."; goto("detail", newAd.id); return; }
-    } else if(params.get("paid")==="success"){
-      history.replaceState(null, "", window.location.pathname);
-      state.error = "Paiement reçu, mais aucune annonce en attente n'a été retrouvée dans ce navigateur. Contactez-nous si le prélèvement a bien eu lieu.";
-    }
+    await Promise.all([loadAds(), loadProfils(), loadUser()]);
     renderView();
   }
   init();
