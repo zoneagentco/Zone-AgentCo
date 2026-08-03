@@ -8,18 +8,21 @@
 <meta property="og:title" content="AgentZone — annonces entreprises & agents commerciaux" />
 <meta property="og:description" content="Le point de rendez-vous des agents commerciaux et des entreprises en France." />
 <meta property="og:type" content="website" />
-<link rel="canonical" href="https://REMPLACER-PAR-TON-DOMAINE.fr/" />
+<link rel="canonical" href="https://agentzone.fr/" />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap');
 
   :root{
-    --bg:#F6F6F2;
+    --bg:#F5F6F8;
     --surface:#FFFFFF;
-    --surface-2:#EFEEE8;
-    --ink:#14171C;
-    --ink-soft:#666B72;
-    --border:#E4E3DC;
+    --surface-2:#EEF1F5;
+    --ink:#111827;
+    --ink-soft:#5B6472;
+    --border:#DEE2E8;
+    --primary:#173C6B;
+    --primary-dark:#0E2848;
+    --primary-soft:#E5EDF7;
     --accent:#FF5A33;
     --accent-soft:#FFE7DC;
     --accent-ink:#B23A16;
@@ -27,10 +30,10 @@
     --teal-soft:#DFF3EE;
     --gold:#B08327;
     --gold-soft:#F6EBD2;
-    --radius:14px;
-    --radius-sm:9px;
-    --shadow: 0 1px 2px rgba(20,20,20,.05), 0 10px 28px rgba(20,20,20,.06);
-    --shadow-sm: 0 1px 2px rgba(20,20,20,.06);
+    --radius:10px;
+    --radius-sm:7px;
+    --shadow: 0 1px 2px rgba(17,24,39,.05), 0 10px 24px rgba(17,24,39,.06);
+    --shadow-sm: 0 1px 2px rgba(17,24,39,.06);
   }
   *{ box-sizing:border-box; }
   html,body{ margin:0; padding:0; }
@@ -42,7 +45,8 @@
 
   .shell{ max-width:1040px; margin:0 auto; padding:0 22px; }
 
-  header.top{ position:sticky; top:0; z-index:30; background:rgba(246,246,242,.9); backdrop-filter:blur(8px); border-bottom:1px solid var(--border); }
+  header.top{ position:sticky; top:0; z-index:30; background:rgba(245,246,248,.92); backdrop-filter:blur(8px); border-bottom:1px solid var(--border); }
+  header.top::before{ content:""; display:block; height:3px; background:linear-gradient(90deg, var(--primary) 0%, var(--teal) 55%, var(--accent) 100%); }
   .top-inner{ display:flex; align-items:center; justify-content:space-between; padding:16px 0; gap:14px; flex-wrap:wrap; }
   .brand{ display:flex; align-items:center; gap:10px; cursor:pointer; }
   .brand-mark{ width:34px; height:34px; flex-shrink:0; }
@@ -50,14 +54,14 @@
   .brand-text b{ font-family:'Sora',sans-serif; font-size:18px; font-weight:700; letter-spacing:-0.01em; }
   .brand-text span{ font-size:11px; color:var(--ink-soft); margin-top:2px; }
   nav{ display:flex; align-items:center; gap:6px; }
-  .navlink{ font-size:13.5px; font-weight:500; color:var(--ink-soft); padding:9px 14px; border-radius:999px; cursor:pointer; transition:.15s ease; }
+  .navlink{ font-size:13.5px; font-weight:500; color:var(--ink-soft); padding:9px 14px; border-radius:var(--radius-sm); cursor:pointer; transition:.15s ease; }
   .navlink:hover{ color:var(--ink); background:var(--surface-2); }
-  .navlink.active{ color:var(--ink); background:var(--surface-2); }
-  .navlink.cta{ background:var(--ink); color:#fff; padding:10px 18px; }
-  .navlink.cta:hover{ background:#000; }
+  .navlink.active{ color:var(--primary); background:var(--primary-soft); }
+  .navlink.cta{ background:var(--primary); color:#fff; padding:10px 18px; }
+  .navlink.cta:hover{ background:var(--primary-dark); }
 
-  .btn{ display:inline-flex; align-items:center; gap:8px; justify-content:center; font-size:13.5px; font-weight:600; padding:12px 20px; border-radius:999px; border:none; background:var(--ink); color:#fff; cursor:pointer; transition:.15s ease; }
-  .btn:hover{ background:#000; transform:translateY(-1px); }
+  .btn{ display:inline-flex; align-items:center; gap:8px; justify-content:center; font-size:13.5px; font-weight:600; padding:12px 20px; border-radius:var(--radius-sm); border:none; background:var(--primary); color:#fff; cursor:pointer; transition:.15s ease; }
+  .btn:hover{ background:var(--primary-dark); transform:translateY(-1px); }
   .btn.outline{ background:transparent; color:var(--ink); border:1.5px solid var(--border); }
   .btn.outline:hover{ background:var(--surface-2); border-color:var(--ink-soft); }
   .btn.accent{ background:var(--accent); }
@@ -66,7 +70,7 @@
   .btn.sm{ padding:9px 15px; font-size:12.5px; }
 
   input,select,textarea{ font-family:'Inter',sans-serif; font-size:14px; padding:11px 13px; border:1.5px solid var(--border); border-radius:var(--radius-sm); background:var(--surface); outline:none; color:var(--ink); width:100%; }
-  input:focus,select:focus,textarea:focus{ border-color:var(--ink); }
+  input:focus,select:focus,textarea:focus{ border-color:var(--primary); }
   textarea{ resize:vertical; min-height:110px; font-family:'Inter',sans-serif; }
 
   .pill{ display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:600; padding:5px 11px; border-radius:999px; letter-spacing:.01em; }
@@ -82,21 +86,28 @@
   .hero p.lead{ font-size:16.5px; color:var(--ink-soft); max-width:520px; margin:0 0 32px; line-height:1.6; }
 
   .pitch-row{ display:flex; gap:14px; flex-wrap:wrap; margin-bottom:36px; }
-  .pitch-card{ flex:1; min-width:230px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:22px; cursor:pointer; transition:.18s ease; box-shadow:var(--shadow-sm); }
-  .pitch-card:hover{ box-shadow:var(--shadow); transform:translateY(-2px); border-color:#D9D8CF; }
-  .pitch-card .ic{ width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; margin-bottom:14px; }
+  .pitch-card{ flex:1; min-width:230px; background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--border); border-radius:var(--radius); padding:22px; cursor:pointer; transition:.18s ease; box-shadow:var(--shadow-sm); }
+  .pitch-card:hover{ box-shadow:var(--shadow); transform:translateY(-2px); border-color:#D9DEE5; }
+  .pitch-card.a{ border-left-color:var(--accent); }
+  .pitch-card.b{ border-left-color:var(--teal); }
+  .pitch-card:hover.a{ border-left-color:var(--accent); }
+  .pitch-card:hover.b{ border-left-color:var(--teal); }
+  .pitch-card .ic{ width:38px; height:38px; border-radius:8px; display:flex; align-items:center; justify-content:center; margin-bottom:14px; }
   .pitch-card.a .ic{ background:var(--accent-soft); color:var(--accent-ink); }
   .pitch-card.b .ic{ background:var(--teal-soft); color:var(--teal); }
   .pitch-card h3{ margin:0 0 5px; font-size:16px; font-family:'Sora',sans-serif; }
   .pitch-card p{ margin:0; font-size:13.5px; color:var(--ink-soft); line-height:1.5; }
   .price-tag{ font-size:12px; font-weight:700; color:var(--ink); margin-top:10px; }
 
-  .search-bar{ display:flex; gap:8px; background:var(--surface); border:1.5px solid var(--border); border-radius:999px; padding:6px 6px 6px 18px; box-shadow:var(--shadow-sm); flex-wrap:wrap; }
+  .search-bar{ display:flex; gap:8px; background:var(--surface); border:1.5px solid var(--border); border-radius:var(--radius-sm); padding:6px 6px 6px 18px; box-shadow:var(--shadow-sm); flex-wrap:wrap; }
   .search-bar input{ flex:1; min-width:160px; border:none; padding:10px 6px; }
   .search-bar input:focus{ border:none; }
 
   .stats-bar{ display:flex; gap:14px; flex-wrap:wrap; margin-bottom:6px; }
-  .stat{ flex:1; min-width:150px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:18px 20px; text-align:center; }
+  .stat{ flex:1; min-width:150px; background:var(--surface); border:1px solid var(--border); border-top:3px solid var(--border); border-radius:var(--radius); padding:18px 20px; text-align:center; }
+  .stat.p1{ border-top-color:var(--primary); }
+  .stat.p2{ border-top-color:var(--accent); }
+  .stat.p3{ border-top-color:var(--teal); }
   .stat-num{ display:block; font-family:'Sora',sans-serif; font-size:28px; font-weight:700; color:var(--ink); line-height:1.1; }
   .stat-label{ display:block; font-size:12px; color:var(--ink-soft); margin-top:4px; }
 
@@ -119,7 +130,7 @@
 
   .ad-grid{ display:flex; flex-direction:column; gap:10px; }
   .ad-card{ display:flex; align-items:center; gap:16px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px 18px; cursor:pointer; transition:.15s ease; }
-  .ad-card:hover{ box-shadow:var(--shadow); border-color:#D9D8CF; transform:translateY(-1px); }
+  .ad-card:hover{ box-shadow:var(--shadow); border-color:#D3D9E1; transform:translateY(-1px); }
   .ad-card .ref{ font-size:10.5px; color:var(--ink-soft); margin-bottom:5px; letter-spacing:.02em; }
   .ad-card h4{ margin:0 0 6px; font-size:15px; font-family:'Sora',sans-serif; font-weight:600; }
   .ad-meta{ display:flex; gap:14px; flex-wrap:wrap; font-size:12.5px; color:var(--ink-soft); }
@@ -157,7 +168,7 @@
   .type-toggle{ display:flex; gap:10px; margin-bottom:8px; }
   .type-opt{ flex:1; border:1.5px solid var(--border); border-radius:var(--radius); padding:16px; cursor:pointer; background:var(--surface); transition:.15s ease; }
   .type-opt:hover{ border-color:var(--ink-soft); }
-  .type-opt.on{ border-color:var(--ink); background:var(--ink); color:#fff; }
+  .type-opt.on{ border-color:var(--primary); background:var(--primary); color:#fff; }
   .type-opt strong{ display:block; font-family:'Sora',sans-serif; font-size:14.5px; }
   .type-opt small{ display:block; opacity:.75; margin-top:3px; font-size:12px; }
 
@@ -195,6 +206,11 @@
   .legal-block ul{ margin:0 0 10px; padding-left:20px; }
   .legal-fill{ background:var(--gold-soft); color:#5C4712; padding:1px 6px; border-radius:4px; font-size:13px; }
   .legal-note{ background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius); padding:16px 20px; font-size:13px; color:var(--ink-soft); margin-bottom:30px; }
+  .danger-zone{ margin-top:48px; padding-top:24px; border-top:1px solid var(--border); }
+  .danger-zone h3{ font-family:'Sora',sans-serif; font-size:14px; color:var(--accent-ink); margin:0 0 6px; }
+  .danger-zone p{ font-size:12.5px; color:var(--ink-soft); margin:0 0 12px; }
+  .btn.danger{ background:transparent; color:var(--accent-ink); border:1.5px solid var(--accent); }
+  .btn.danger:hover{ background:var(--accent-soft); }
 
   .spin{ display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,.5); border-top-color:#fff; border-radius:50%; animation:spin 1s linear infinite; }
   @keyframes spin{ to{ transform:rotate(360deg); } }
@@ -217,7 +233,7 @@
     <div class="shell top-inner">
       <div class="brand" data-action="goto" data-view="home">
         <svg class="brand-mark" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect width="34" height="34" rx="9" fill="#14171C"/>
+          <rect width="34" height="34" rx="8" fill="#173C6B"/>
           <circle cx="11" cy="21" r="3.4" fill="#FF5A33"/>
           <circle cx="23" cy="13" r="3.4" fill="#0F7A6A"/>
           <path d="M13.6 19 20.4 15" stroke="#F6F6F2" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="1 3.4"/>
@@ -254,7 +270,7 @@
     <p><span class="footer-link" data-action="goto" data-view="legal">Mentions légales &amp; confidentialité (RGPD)</span></p>
   </footer>
   <div id="cookie-banner" class="cookie-banner" style="display:none;">
-    <p>Ce site utilise un cookie pour retenir tes préférences de recherche (type d'annonce, secteur, mode) d'une visite à l'autre. Aucune publicité, aucun cookie de mesure d'audience ou de suivi publicitaire.</p>
+    <p>Ce site utilise un cookie pour retenir vos préférences de recherche (type d'annonce, secteur, mode) d'une visite à l'autre. Aucune publicité, aucun cookie de mesure d'audience ou de suivi publicitaire.</p>
     <div class="cookie-actions">
       <button class="btn sm outline" data-action="cookies-decline">Refuser</button>
       <button class="btn sm accent" data-action="cookies-accept">Accepter</button>
@@ -478,6 +494,19 @@
     if(supa){ try{ await supa.auth.signOut(); }catch(e){} }
     state.user = null;
   }
+  async function deleteOwnAccount(){
+    if(!supa || !state.user) return { ok:false, message:"Non connecté." };
+    try{
+      var res = await supa.rpc("delete_own_account");
+      if(res.error) throw res.error;
+      var uid = state.user.id;
+      state.ads = (state.ads||[]).filter(function(a){ return a.userId !== uid; });
+      if(state.profils) delete state.profils[uid];
+      try{ await supa.auth.signOut(); }catch(e){}
+      state.user = null;
+      return { ok:true };
+    }catch(e){ return { ok:false, message: e.message || "La suppression a échoué." }; }
+  }
   async function sendPasswordReset(email){
     if(!supa) return { ok:false, message:"Base de données non configurée." };
     try{
@@ -529,7 +558,7 @@
 
   /* ---------- PUBLICATION ---------- */
   async function publishAd(ad){
-    if(!state.user){ state.error = "Connecte-toi pour publier une annonce."; return null; }
+    if(!state.user){ state.error = "Connectez-vous pour publier une annonce."; return null; }
     var geo = await geocode(ad.ville);
     var now = new Date();
     var expires = new Date(now.getTime() + AD_DURATION_DAYS*86400000);
@@ -573,18 +602,19 @@
 
     html += '<section class="stats-bar">';
     if(ads === null){
-      html += '<div class="stat"><span class="stat-num">…</span><span class="stat-label">Membres inscrits</span></div>';
-      html += '<div class="stat"><span class="stat-num">…</span><span class="stat-label">Annonces entreprises</span></div>';
-      html += '<div class="stat"><span class="stat-num">…</span><span class="stat-label">Annonces agents</span></div>';
+      html += '<div class="stat p1"><span class="stat-num">…</span><span class="stat-label">Membres inscrits</span></div>';
+      html += '<div class="stat p2"><span class="stat-num">…</span><span class="stat-label">Annonces entreprises</span></div>';
+      html += '<div class="stat p3"><span class="stat-num">…</span><span class="stat-label">Annonces agents</span></div>';
     } else {
       var membersCount = state.profils ? Object.keys(state.profils).length : 0;
       var entCount = entreprises.length;
       var agtCount = active.filter(function(a){ return a.type==="agent"; }).length;
-      html += '<div class="stat"><span class="stat-num">'+membersCount+'</span><span class="stat-label">Membres inscrits</span></div>';
-      html += '<div class="stat"><span class="stat-num">'+entCount+'</span><span class="stat-label">Annonces entreprises</span></div>';
-      html += '<div class="stat"><span class="stat-num">'+agtCount+'</span><span class="stat-label">Annonces agents</span></div>';
+      html += '<div class="stat p1"><span class="stat-num">'+membersCount+'</span><span class="stat-label">Membres inscrits</span></div>';
+      html += '<div class="stat p2"><span class="stat-num">'+entCount+'</span><span class="stat-label">Annonces entreprises</span></div>';
+      html += '<div class="stat p3"><span class="stat-num">'+agtCount+'</span><span class="stat-label">Annonces agents</span></div>';
     }
     html += '</section>';
+    html += '<section id="map-section">';
     html += '  <div class="section-head"><div><h2>Entreprises qui recrutent en ce moment</h2><p>Localisez les mandats disponibles et filtrez selon vos critères.</p></div></div>';
     html += '  <div class="map-wrap">';
     html += '    <div class="map-filters">';
@@ -696,7 +726,7 @@
     html += '  <div class="fiche-tags"><span class="pill '+(ad.type==="entreprise"?"entreprise":"agent")+'">'+(ad.type==="entreprise"?"Entreprise":"Agent")+'</span><span class="pill neutral">'+esc(ad.mode)+'</span>'+(expired?'<span class="pill warn">Expirée</span>':'<span class="pill neutral">Expire dans '+daysLeft(ad)+' j</span>')+'</div></div>';
     html += '  <div class="fiche-meta"><span>'+esc(ad.secteur)+'</span><span>'+esc(ad.ville)+(ad.zoneCouverte? " · "+esc(ad.zoneCouverte) : "")+'</span>'+(ad.commission?'<span>Commission proposée : '+esc(ad.commission)+' %</span>':'')+'<span>Canal préféré : '+esc(ad.canal)+'</span><span>Publiée '+timeAgo(ad.createdAt)+'</span></div>';
     html += '  <div class="fiche-desc">'+esc(ad.description)+'</div>';
-    var profil = state.profils ? state.profils[(ad.contactEmail||"").toLowerCase()] : null;
+    var profil = (state.profils && ad.userId) ? state.profils[ad.userId] : null;
     var socialLinks = profil ? SOCIALS.filter(function(s){ return profil[s.key]; }) : [];
     if(socialLinks.length){
       html += '  <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;">';
@@ -730,7 +760,7 @@
     html += '<div class="section-head" style="margin-top:0;"><div><h2>Déposer une annonce</h2><p>Publication gratuite, valable 3 mois.</p></div></div>';
 
     if(!state.user){
-      html += '<div class="empty"><strong>Connecte-toi pour publier une annonce.</strong>Un compte gratuit permet de gérer tes annonces et d\'y associer tes réseaux sociaux.'+
+      html += '<div class="empty"><strong>Connectez-vous pour publier une annonce.</strong>Un compte gratuit permet de gérer vos annonces et d\'y associer vos réseaux sociaux.'+
         '<div style="margin-top:16px;"><span class="btn accent" data-action="goto" data-view="account">Se connecter / créer un compte</span></div></div>';
       html += '</div>';
       return html;
@@ -825,6 +855,13 @@
         '</div>';
       }).join("") + '</div>';
     }
+
+    html += '<div class="danger-zone">';
+    html += '  <h3>Supprimer mon compte</h3>';
+    html += '  <p>Supprime définitivement votre compte, votre profil et toutes vos annonces. Action immédiate et irréversible.</p>';
+    html += '  <button class="btn sm danger" data-action="delete-account">Supprimer définitivement mon compte</button>';
+    html += '</div>';
+
     html += '</div>';
     return html;
   }
@@ -832,10 +869,10 @@
   /* ---------- RENDER: NOUVEAU MOT DE PASSE ---------- */
   function renderResetPassword(){
     var html = '<div class="post-page" style="padding-top:26px;">';
-    html += '<div class="section-head" style="margin-top:0;"><div><h2>Choisir un nouveau mot de passe</h2><p>Tu arrives depuis le lien reçu par email.</p></div></div>';
+    html += '<div class="section-head" style="margin-top:0;"><div><h2>Choisir un nouveau mot de passe</h2><p>Vous arrivez depuis le lien reçu par email.</p></div></div>';
     html += '<form class="card-form" data-form="reset-password">';
     html += '  <div class="field"><span class="field-label">Nouveau mot de passe</span><input required type="password" name="password" minlength="6" placeholder="6 caractères minimum"/></div>';
-    html += '  <div class="field"><span class="field-label">Confirmer le mot de passe</span><input required type="password" name="password2" minlength="6" placeholder="Retape le même mot de passe"/></div>';
+    html += '  <div class="field"><span class="field-label">Confirmer le mot de passe</span><input required type="password" name="password2" minlength="6" placeholder="Retapez le même mot de passe"/></div>';
     html += '  <div><button class="btn accent" type="submit">Enregistrer le nouveau mot de passe</button></div>';
     html += '</form></div>';
     return html;
@@ -847,7 +884,7 @@
     html += '<h2>Mentions légales &amp; confidentialité</h2>';
     html += '<p class="legal-updated">Dernière mise à jour : ' + new Date().toLocaleDateString("fr-FR") + '</p>';
 
-    html += '<div class="legal-note">Les zones en <span class="legal-fill">surbrillance</span> sont des informations à compléter par l\'éditeur du site avant sa mise en ligne. Ce texte est un modèle de départ, pas un avis juridique — fais-le relire si tu veux une couverture juridique complète.</div>';
+    html += '<div class="legal-note">Les zones en <span class="legal-fill">surbrillance</span> sont des informations à compléter par l\'éditeur du site avant sa mise en ligne. Ce texte est un modèle de départ, pas un avis juridique — faites-le relire pour une couverture juridique complète.</div>';
 
     html += '<div class="legal-block"><h3>1. Éditeur du site</h3><p>Le site AgentZone est édité par <span class="legal-fill">[Nom / raison sociale]</span>, <span class="legal-fill">[statut juridique, ex. auto-entrepreneur, SASU…]</span>, immatriculé sous le numéro SIRET <span class="legal-fill">[n° SIRET]</span>, dont le siège est situé <span class="legal-fill">[adresse complète]</span>. Directeur de la publication : <span class="legal-fill">[Nom]</span>. Contact : <span class="legal-fill">[email de contact]</span>.</p></div>';
 
@@ -864,13 +901,13 @@
     html += '</ul>';
     html += '<p><b>Finalité :</b> permettre la mise en relation entre entreprises et agents commerciaux, et le paiement de la publication d\'une annonce.</p>';
     html += '<p><b>Base légale :</b> exécution d\'une prestation demandée par l\'utilisateur (publication d\'une annonce payante).</p>';
-    html += '<p><b>Durée de conservation :</b> chaque annonce est automatiquement supprimée de l\'affichage 3 mois après sa publication. Le compte (email, informations de profil) est conservé jusqu\'à demande de suppression par son titulaire.</p>';
+    html += '<p><b>Durée de conservation :</b> chaque annonce est automatiquement supprimée de la base de données 3 mois après sa publication (pas seulement masquée). Le compte et le profil sont conservés jusqu\'à suppression par leur titulaire.</p>';
     html += '<p><b>Destinataires :</b> Supabase (hébergement de la base de données et des comptes), OpenStreetMap / Nominatim (localisation approximative de la ville renseignée).</p>';
-    html += '<p><b>Vos droits :</b> conformément au RGPD, vous disposez d\'un droit d\'accès, de rectification, d\'effacement, de limitation et d\'opposition sur vos données. Pour l\'exercer, écrivez à <span class="legal-fill">[email dédié RGPD]</span>.</p>';
+    html += '<p><b>Vos droits :</b> conformément au RGPD, vous disposez d\'un droit d\'accès, de rectification, d\'effacement, de limitation et d\'opposition sur vos données. La suppression de votre compte, de votre profil et de vos annonces est possible immédiatement et par vous-même, depuis "Mon compte". Pour toute autre demande, écrivez à <span class="legal-fill">[email dédié RGPD]</span>.</p>';
     html += '<p><b>Transferts hors UE :</b> l\'hébergement (Vercel) peut impliquer un transfert de données vers les États-Unis, encadré par les clauses contractuelles types de la Commission européenne.</p></div>';
 
-    html += '<div class="legal-block"><h3>5. Cookies</h3><p>AgentZone utilise un seul cookie non essentiel, soumis à ton consentement : <b>az_preferences</b>, qui retient ton dernier type d\'annonce, secteur et mode de recherche pour te les proposer par défaut à ta prochaine visite. Il est conservé 12 mois maximum.</p>'+
-      '<p>Un second cookie, <b>az_cookie_consent</b>, mémorise simplement ton choix (accepté/refusé) — celui-ci est strictement nécessaire au fonctionnement du bandeau de consentement et ne demande donc pas d\'accord préalable.</p>'+
+    html += '<div class="legal-block"><h3>5. Cookies</h3><p>AgentZone utilise un seul cookie non essentiel, soumis à votre consentement : <b>az_preferences</b>, qui retient votre dernier type d\'annonce, secteur et mode de recherche pour vous les proposer par défaut à votre prochaine visite. Il est conservé 12 mois maximum.</p>'+
+      '<p>Un second cookie, <b>az_cookie_consent</b>, mémorise simplement votre choix (accepté/refusé) — celui-ci est strictement nécessaire au fonctionnement du bandeau de consentement et ne demande donc pas d\'accord préalable.</p>'+
       '<p>AgentZone n\'utilise aucun cookie publicitaire, de suivi cross-site, ni d\'outil de mesure d\'audience tiers (type Google Analytics).</p>'+
       '<p><span class="footer-link" data-action="cookies-reset">Modifier mon choix concernant les cookies</span></p></div>';
 
@@ -939,13 +976,21 @@
     else if(action==="forgot-password"){
       var form = t.closest("form");
       var email = form && form.email ? form.email.value.trim() : "";
-      if(!email){ state.error = "Renseigne d'abord ton email dans le champ ci-dessus, puis clique à nouveau."; renderView(); return; }
+      if(!email){ state.error = "Renseignez d'abord votre email dans le champ ci-dessus, puis cliquez à nouveau."; renderView(); return; }
       var res = await sendPasswordReset(email);
-      if(res.ok){ state.flash = "Email envoyé — clique sur le lien reçu pour choisir un nouveau mot de passe."; }
+      if(res.ok){ state.flash = "Email envoyé — cliquez sur le lien reçu pour choisir un nouveau mot de passe."; }
       else{ state.error = res.message; }
       renderView();
     }
     else if(action==="logout"){ await signOutUser(); renderView(); }
+    else if(action==="delete-account"){
+      var sure = false;
+      try{ sure = window.confirm("Supprimer définitivement votre compte, votre profil et toutes vos annonces ? Cette action est immédiate et irréversible."); }catch(err){}
+      if(!sure) return;
+      var res = await deleteOwnAccount();
+      if(res.ok){ state.flash = "Votre compte et toutes vos données ont été supprimés."; goto("home"); }
+      else{ state.error = res.message; renderView(); }
+    }
     else if(action==="set-account-type"){
       if(!state.user || !state.profils) return;
       if(!state.profils[state.user.id]) state.profils[state.user.id] = { email: state.user.email, type:"entreprise", nom:"", site:"", linkedin:"", instagram:"", facebook:"" };
@@ -1045,7 +1090,7 @@
         await saveProfil({ type: state.postType, nom:"", site:"", linkedin:"", instagram:"", facebook:"" });
         state.flash = "Compte créé, bienvenue !";
       } else {
-        state.flash = "Compte créé — vérifie ta boîte mail pour confirmer ton adresse avant de te connecter.";
+        state.flash = "Compte créé — vérifiez votre boîte mail pour confirmer votre adresse avant de vous connecter.";
         state.authMode = "login";
       }
       renderView();
