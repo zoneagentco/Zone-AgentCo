@@ -136,6 +136,9 @@
   .ad-meta{ display:flex; gap:14px; flex-wrap:wrap; font-size:12.5px; color:var(--ink-soft); }
   .ad-meta span{ display:inline-flex; align-items:center; gap:5px; }
   .ad-card .tags{ margin-left:auto; display:flex; flex-direction:column; align-items:flex-end; gap:6px; flex-shrink:0; }
+  .fav-btn{ background:none; border:none; cursor:pointer; font-size:19px; line-height:1; color:var(--ink-soft); padding:2px; }
+  .fav-btn:hover{ color:var(--gold); }
+  .fav-btn.on{ color:var(--gold); }
 
   .empty{ padding:44px 20px; text-align:center; border:1.5px dashed var(--border); border-radius:var(--radius); color:var(--ink-soft); font-size:13.5px; }
   .empty strong{ display:block; color:var(--ink); font-size:15.5px; margin-bottom:6px; font-family:'Sora',sans-serif; }
@@ -300,7 +303,20 @@
   }
   /* ================================================ */
 
-  var SECTORS = ["Assurance","Immobilier","Industrie","IT / Digital","Cosmétique","Agroalimentaire","BTP","Textile","Automobile","Services BtoB","Energie","Santé / Paramédical","Mode","Ameublement","Autre"];
+  var SECTORS = [
+    "Agriculture","Agroalimentaire","Ameublement","Aéronautique","Architecture / Décoration",
+    "Art / Culture","Assurance","Automobile","Banque / Finance","Beauté / Cosmétique",
+    "Bijouterie / Horlogerie","BTP / Construction","Bureautique / Fournitures","Chimie",
+    "Distribution / Commerce","Eau / Environnement","Édition / Presse","Éducation / Formation",
+    "Électroménager","Électronique / High-tech","Énergie / Renouvelables","Événementiel",
+    "Immobilier","Imprimerie","Industrie","IT / Digital","Jardinage / Paysagisme",
+    "Jouets / Loisirs","Logistique / Transport","Luxe","Maintenance / Services techniques",
+    "Matériel médical","Mode / Textile","Nettoyage / Hygiène","Nutrition / Diététique",
+    "Packaging / Emballage","Papeterie","Pharmacie / Parapharmacie","Photographie",
+    "Plomberie / Chauffage","Publicité / Communication","Restauration / CHR",
+    "Santé / Paramédical","Sécurité","Services BtoB","Sport / Fitness","Télécommunications",
+    "Tourisme / Voyages","Vin / Spiritueux","Autre"
+  ];
   var MODES = ["Présentiel","Distanciel","Les deux"];
   var CANAUX = ["Email","Téléphone","Visioconférence","Peu importe"];
   var COMMISSION_RANGES = [
@@ -327,7 +343,8 @@
     flash: "", error: "",
     user: undefined,       /* utilisateur Supabase Auth connecté ({id,email}), null si déconnecté */
     authMode: "login",     /* "login" ou "signup", pour l'écran Mon compte */
-    profils: null          /* { "user-id": {userId,email,type,nom,site,linkedin,...} } */
+    profils: null,          /* { "user-id": {userId,email,type,nom,site,linkedin,...} } */
+    favoris: {}              /* { "ad-id": true } — favoris de l'utilisateur connecté */
   };
 
   var homeMap = null, homeMarkers = null;
@@ -410,7 +427,7 @@
       user_id:a.userId, commission:a.commission };
   }
   function rowToProfil(r){
-    return { userId:r.user_id, email:r.email, type:r.type, nom:r.nom||"", site:r.site||"", linkedin:r.linkedin||"", instagram:r.instagram||"", facebook:r.facebook||"" };
+    return { userId:r.user_id, email:r.email, type:r.type, nom:r.nom||"", presentation:r.presentation||"", site:r.site||"", linkedin:r.linkedin||"", instagram:r.instagram||"", facebook:r.facebook||"" };
   }
 
   async function loadAds(){
@@ -449,6 +466,7 @@
     if(!supa || !state.user) return false;
     try{
       var row = { user_id: state.user.id, email: state.user.email, type: profil.type, nom: profil.nom||"",
+        presentation: profil.presentation||"",
         site: profil.site||"", linkedin: profil.linkedin||"", instagram: profil.instagram||"", facebook: profil.facebook||"",
         updated_at: new Date().toISOString() };
       var res = await supa.from("profils").upsert(row, { onConflict: "user_id" });
@@ -457,9 +475,36 @@
       return true;
     }catch(e){ state.error = "La sauvegarde du profil a échoué, réessayez."; return false; }
   }
+
+  async function loadFavoris(){
+    if(!supa || !state.user){ state.favoris = {}; return; }
+    try{
+      var res = await supa.from("favoris").select("ad_id");
+      if(res.error) throw res.error;
+      var map = {};
+      (res.data||[]).forEach(function(r){ map[r.ad_id] = true; });
+      state.favoris = map;
+    }catch(e){ state.favoris = {}; }
+  }
+  async function toggleFavori(adId){
+    if(!supa || !state.user){ state.error = "Connectez-vous pour ajouter une annonce à vos favoris."; renderView(); return; }
+    var isFav = !!state.favoris[adId];
+    try{
+      if(isFav){
+        var res = await supa.from("favoris").delete().eq("ad_id", adId).eq("user_id", state.user.id);
+        if(res.error) throw res.error;
+        delete state.favoris[adId];
+      } else {
+        var res2 = await supa.from("favoris").insert([{ user_id: state.user.id, ad_id: adId }]);
+        if(res2.error) throw res2.error;
+        state.favoris[adId] = true;
+      }
+      renderView();
+    }catch(e){ state.error = "L'action sur les favoris a échoué, réessayez."; renderView(); }
+  }
   async function upsertProfilFromAd(ad){
     if(!state.user || !state.profils) return;
-    var existing = state.profils[state.user.id] || { type: ad.type, nom:"", site:"", linkedin:"", instagram:"", facebook:"" };
+    var existing = state.profils[state.user.id] || { type: ad.type, nom:"", presentation:"", site:"", linkedin:"", instagram:"", facebook:"" };
     existing.type = ad.type;
     await saveProfil(existing);
   }
@@ -703,13 +748,17 @@
   }
 
   function adCardHtml(a){
+    var fav = !!state.favoris[a.id];
     return '<div class="ad-card" data-action="goto-detail" data-id="'+a.id+'">'+
       '<div style="flex:1;min-width:0;">'+
         '<div class="ref mono">'+a.ref+'</div>'+
         '<h4>'+esc(a.titre)+'</h4>'+
         '<div class="ad-meta"><span>'+esc(a.secteur)+'</span><span>'+esc(a.ville||a.zoneCouverte||"")+'</span><span>'+esc(a.mode)+'</span>'+(a.commission?'<span>Commission '+esc(a.commission)+' %</span>':'')+'<span>'+timeAgo(a.createdAt)+'</span></div>'+
       '</div>'+
-      '<div class="tags"><span class="pill '+(a.type==="entreprise"?"entreprise":"agent")+'">'+(a.type==="entreprise"?"Entreprise":"Agent")+'</span></div>'+
+      '<div class="tags">'+
+        '<button class="fav-btn'+(fav?" on":"")+'" data-action="toggle-favori" data-id="'+a.id+'" aria-label="Favori" title="'+(fav?"Retirer des favoris":"Ajouter aux favoris")+'">'+(fav?"★":"☆")+'</button>'+
+        '<span class="pill '+(a.type==="entreprise"?"entreprise":"agent")+'">'+(a.type==="entreprise"?"Entreprise":"Agent")+'</span>'+
+      '</div>'+
     '</div>';
   }
 
@@ -722,14 +771,16 @@
     var expired = isExpired(ad);
     var html = '<span class="back-link" data-action="goto" data-view="browse">← Retour aux annonces</span>';
     html += '<div class="fiche">';
+    var fav = !!state.favoris[ad.id];
     html += '  <div class="fiche-head"><div><span class="ref mono" style="font-size:12px;color:var(--ink-soft)">'+ad.ref+'</span><h2>'+esc(ad.titre)+'</h2></div>';
-    html += '  <div class="fiche-tags"><span class="pill '+(ad.type==="entreprise"?"entreprise":"agent")+'">'+(ad.type==="entreprise"?"Entreprise":"Agent")+'</span><span class="pill neutral">'+esc(ad.mode)+'</span>'+(expired?'<span class="pill warn">Expirée</span>':'<span class="pill neutral">Expire dans '+daysLeft(ad)+' j</span>')+'</div></div>';
+    html += '  <div class="fiche-tags"><button class="fav-btn'+(fav?" on":"")+'" data-action="toggle-favori" data-id="'+ad.id+'" title="'+(fav?"Retirer des favoris":"Ajouter aux favoris")+'">'+(fav?"★":"☆")+'</button><span class="pill '+(ad.type==="entreprise"?"entreprise":"agent")+'">'+(ad.type==="entreprise"?"Entreprise":"Agent")+'</span><span class="pill neutral">'+esc(ad.mode)+'</span>'+(expired?'<span class="pill warn">Expirée</span>':'<span class="pill neutral">Expire dans '+daysLeft(ad)+' j</span>')+'</div></div>';
     html += '  <div class="fiche-meta"><span>'+esc(ad.secteur)+'</span><span>'+esc(ad.ville)+(ad.zoneCouverte? " · "+esc(ad.zoneCouverte) : "")+'</span>'+(ad.commission?'<span>Commission proposée : '+esc(ad.commission)+' %</span>':'')+'<span>Canal préféré : '+esc(ad.canal)+'</span><span>Publiée '+timeAgo(ad.createdAt)+'</span></div>';
     html += '  <div class="fiche-desc">'+esc(ad.description)+'</div>';
     var profil = (state.profils && ad.userId) ? state.profils[ad.userId] : null;
     var socialLinks = profil ? SOCIALS.filter(function(s){ return profil[s.key]; }) : [];
-    if(socialLinks.length){
-      html += '  <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;">';
+    if(ad.userId){
+      html += '  <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">';
+      html += '<span class="link-more" data-action="goto" data-view="profile" data-id="'+ad.userId+'">Voir le profil →</span>';
       socialLinks.forEach(function(s){
         html += '<a href="'+esc(profil[s.key])+'" target="_blank" rel="noopener noreferrer" class="pill neutral">'+s.label+' ↗</a>';
       });
@@ -816,8 +867,10 @@
       return html;
     }
 
-    var profil = (state.profils && state.profils[state.user.id]) || { email: state.user.email, type:"entreprise", nom:"", site:"", linkedin:"", instagram:"", facebook:"" };
+    var profil = (state.profils && state.profils[state.user.id]) || { email: state.user.email, type:"entreprise", nom:"", presentation:"", site:"", linkedin:"", instagram:"", facebook:"" };
     var myAds = (state.ads||[]).filter(function(a){ return a.userId===state.user.id; })
+      .sort(function(a,b){ return new Date(b.createdAt)-new Date(a.createdAt); });
+    var favAds = (state.ads||[]).filter(function(a){ return state.favoris[a.id]; })
       .sort(function(a,b){ return new Date(b.createdAt)-new Date(a.createdAt); });
 
     html += '<div class="banner"><span>Connecté en tant que <b>'+esc(state.user.email)+'</b></span><button class="btn sm outline" data-action="logout">Se déconnecter</button></div>';
@@ -829,6 +882,7 @@
     html += '    <div class="type-opt'+(profil.type==="agent"?" on":"")+'" data-action="set-account-type" data-type="agent"><strong>Agent commercial</strong></div>';
     html += '  </div>';
     html += '  <div class="field"><span class="field-label">Nom / raison sociale</span><input name="nom" value="'+esc(profil.nom)+'" placeholder="'+(profil.type==="entreprise"?"Ex : Atelier Lumière SAS":"Ex : Jean Dupont")+'"/></div>';
+    html += '  <div class="field"><span class="field-label">Présentation de votre activité</span><textarea name="presentation" placeholder="'+(profil.type==="entreprise"?"Qui vous êtes, vos produits, votre marché…":"Votre parcours, vos secteurs, votre zone de chalandise…")+'">'+esc(profil.presentation)+'</textarea><span class="field-hint">Visible sur votre profil public, accessible depuis vos annonces.</span></div>';
     html += '  <div class="field-row">';
     SOCIALS.forEach(function(s){
       html += '<div class="field"><span class="field-label">'+s.label+'</span><input name="'+s.key+'" value="'+esc(profil[s.key])+'" placeholder="'+s.ph+'"/></div>';
@@ -856,6 +910,13 @@
       }).join("") + '</div>';
     }
 
+    html += '<div class="section-head"><div><h2 style="font-size:17px;">Mes favoris ('+favAds.length+')</h2></div></div>';
+    if(favAds.length===0){
+      html += '<div class="empty"><strong>Aucune annonce mise en favoris pour l\'instant.</strong>Cliquez sur l\'étoile ☆ d\'une annonce pour la retrouver ici.</div>';
+    } else {
+      html += '<div class="ad-grid">' + favAds.map(adCardHtml).join("") + '</div>';
+    }
+
     html += '<div class="danger-zone">';
     html += '  <h3>Supprimer mon compte</h3>';
     html += '  <p>Supprime définitivement votre compte, votre profil et toutes vos annonces. Action immédiate et irréversible.</p>';
@@ -863,6 +924,40 @@
     html += '</div>';
 
     html += '</div>';
+    return html;
+  }
+
+  /* ---------- RENDER: PROFIL PUBLIC ---------- */
+  function renderProfileView(userId){
+    var profil = state.profils ? state.profils[userId] : null;
+    if(!profil){
+      return '<div class="empty" style="margin-top:26px;"><strong>Ce profil est introuvable.</strong><div style="margin-top:12px;"><span class="back-link" style="margin:0;justify-content:center;" data-action="goto" data-view="browse">← Retour aux annonces</span></div></div>';
+    }
+    var ads = (state.ads||[]).filter(function(a){ return a.userId===userId && !isExpired(a); })
+      .sort(function(a,b){ return new Date(b.createdAt)-new Date(a.createdAt); });
+    var socialLinks = SOCIALS.filter(function(s){ return profil[s.key]; });
+
+    var html = '<span class="back-link" data-action="goto" data-view="browse">← Retour aux annonces</span>';
+    html += '<div class="fiche">';
+    html += '  <div class="fiche-head"><div><span class="pill '+(profil.type==="entreprise"?"entreprise":"agent")+'">'+(profil.type==="entreprise"?"Entreprise":"Agent")+'</span><h2>'+esc(profil.nom || "Profil sans nom")+'</h2></div></div>';
+    if(profil.presentation){
+      html += '  <div class="fiche-desc" style="border-top:none;padding-top:0;">'+esc(profil.presentation)+'</div>';
+    }
+    if(socialLinks.length){
+      html += '  <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;">';
+      socialLinks.forEach(function(s){
+        html += '<a href="'+esc(profil[s.key])+'" target="_blank" rel="noopener noreferrer" class="pill neutral">'+s.label+' ↗</a>';
+      });
+      html += '  </div>';
+    }
+    html += '</div>';
+
+    html += '<div class="section-head" style="margin-top:34px;"><div><h2 style="font-size:17px;">Annonces actives ('+ads.length+')</h2></div></div>';
+    if(ads.length===0){
+      html += '<div class="empty"><strong>Aucune annonce active pour l\'instant.</strong></div>';
+    } else {
+      html += '<div class="ad-grid">' + ads.map(adCardHtml).join("") + '</div>';
+    }
     return html;
   }
 
@@ -935,6 +1030,7 @@
     else if(state.view==="post") out += renderPost();
     else if(state.view==="legal") out += renderLegal();
     else if(state.view==="account") out += renderAccount();
+    else if(state.view==="profile") out += renderProfileView(state.activeId);
     else if(state.view==="reset-password") out += renderResetPassword();
 
     root.innerHTML = out;
@@ -982,7 +1078,7 @@
       else{ state.error = res.message; }
       renderView();
     }
-    else if(action==="logout"){ await signOutUser(); renderView(); }
+    else if(action==="logout"){ await signOutUser(); state.favoris = {}; renderView(); }
     else if(action==="delete-account"){
       var sure = false;
       try{ sure = window.confirm("Supprimer définitivement votre compte, votre profil et toutes vos annonces ? Cette action est immédiate et irréversible."); }catch(err){}
@@ -993,9 +1089,13 @@
     }
     else if(action==="set-account-type"){
       if(!state.user || !state.profils) return;
-      if(!state.profils[state.user.id]) state.profils[state.user.id] = { email: state.user.email, type:"entreprise", nom:"", site:"", linkedin:"", instagram:"", facebook:"" };
+      if(!state.profils[state.user.id]) state.profils[state.user.id] = { email: state.user.email, type:"entreprise", nom:"", presentation:"", site:"", linkedin:"", instagram:"", facebook:"" };
       state.profils[state.user.id].type = t.getAttribute("data-type");
       renderView();
+    }
+    else if(action==="toggle-favori"){
+      e.preventDefault();
+      await toggleFavori(t.getAttribute("data-id"));
     }
     else if(action==="withdraw-ad"){
       var id = t.getAttribute("data-id");
@@ -1075,7 +1175,7 @@
       btn.disabled = true; btn.innerHTML = '<span class="spin"></span> Connexion…';
       var res = await signIn(form.email.value.trim(), form.password.value);
       btn.disabled = false; btn.innerHTML = original;
-      if(!res.ok){ state.error = res.message; }
+      if(!res.ok){ state.error = res.message; } else { await loadFavoris(); }
       renderView();
     }
     else if(form.getAttribute && form.getAttribute("data-form")==="account-signup"){
@@ -1087,7 +1187,7 @@
       btn.disabled = false; btn.innerHTML = original;
       if(!res.ok){ state.error = res.message; }
       else if(res.confirmed){
-        await saveProfil({ type: state.postType, nom:"", site:"", linkedin:"", instagram:"", facebook:"" });
+        await saveProfil({ type: state.postType, nom:"", presentation:"", site:"", linkedin:"", instagram:"", facebook:"" });
         state.flash = "Compte créé, bienvenue !";
       } else {
         state.flash = "Compte créé — vérifiez votre boîte mail pour confirmer votre adresse avant de vous connecter.";
@@ -1113,7 +1213,7 @@
       e.preventDefault();
       if(!state.user) return;
       var current = state.profils[state.user.id] || { type:"entreprise" };
-      var updated = Object.assign({}, current, { nom: form.nom.value.trim() });
+      var updated = Object.assign({}, current, { nom: form.nom.value.trim(), presentation: form.presentation.value.trim() });
       SOCIALS.forEach(function(s){ updated[s.key] = form[s.key].value.trim(); });
       var btn = form.querySelector("button[type=submit]");
       var original = btn.innerHTML;
@@ -1129,6 +1229,7 @@
   async function init(){
     loadPreferencesCookie();
     await Promise.all([loadAds(), loadProfils(), loadUser()]);
+    if(state.user) await loadFavoris();
     if(supa){
       supa.auth.onAuthStateChange(function(event, session){
         if(event === "PASSWORD_RECOVERY"){
