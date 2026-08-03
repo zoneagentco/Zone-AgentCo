@@ -59,6 +59,11 @@
   .navlink.active{ color:var(--primary); background:var(--primary-soft); }
   .navlink.cta{ background:var(--primary); color:#fff; padding:10px 18px; }
   .navlink.cta:hover{ background:var(--primary-dark); }
+  .lang-toggle{ font-size:12.5px; font-weight:600; color:var(--ink-soft); margin-left:6px; display:inline-flex; align-items:center; gap:4px; }
+  .lang-opt{ cursor:pointer; padding:4px 5px; border-radius:5px; }
+  .lang-opt:hover{ color:var(--ink); background:var(--surface-2); }
+  .lang-opt.on{ color:var(--primary); font-weight:700; }
+  .lang-sep{ color:var(--border); }
 
   .btn{ display:inline-flex; align-items:center; gap:8px; justify-content:center; font-size:13.5px; font-weight:600; padding:12px 20px; border-radius:var(--radius-sm); border:none; background:var(--primary); color:#fff; cursor:pointer; transition:.15s ease; }
   .btn:hover{ background:var(--primary-dark); transform:translateY(-1px); }
@@ -139,6 +144,10 @@
   .fav-btn{ background:none; border:none; cursor:pointer; font-size:19px; line-height:1; color:var(--ink-soft); padding:2px; }
   .fav-btn:hover{ color:var(--gold); }
   .fav-btn.on{ color:var(--gold); }
+  .ac-wrap{ position:relative; }
+  .ac-list{ display:none; position:absolute; top:calc(100% + 4px); left:0; right:0; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); box-shadow:var(--shadow); max-height:220px; overflow-y:auto; z-index:40; }
+  .ac-item{ padding:9px 13px; font-size:13.5px; cursor:pointer; }
+  .ac-item:hover{ background:var(--surface-2); }
 
   .empty{ padding:44px 20px; text-align:center; border:1.5px dashed var(--border); border-radius:var(--radius); color:var(--ink-soft); font-size:13.5px; }
   .empty strong{ display:block; color:var(--ink); font-size:15.5px; margin-bottom:6px; font-family:'Sora',sans-serif; }
@@ -241,13 +250,16 @@
           <circle cx="23" cy="13" r="3.4" fill="#0F7A6A"/>
           <path d="M13.6 19 20.4 15" stroke="#F6F6F2" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="1 3.4"/>
         </svg>
-        <div class="brand-text"><b>AgentZone</b><span>Entreprises &amp; agents commerciaux</span></div>
+        <div class="brand-text"><b>AgentZone</b><span data-i18n="tagline">Entreprises &amp; agents commerciaux</span></div>
       </div>
       <nav>
-        <span class="navlink" data-nav="home" data-action="goto" data-view="home">Accueil</span>
-        <span class="navlink" data-nav="browse" data-action="goto" data-view="browse">Annonces</span>
-        <span class="navlink" data-nav="account" data-action="goto" data-view="account">Mon compte</span>
-        <span class="navlink cta" data-action="goto" data-view="post">Déposer une annonce</span>
+        <span class="navlink" data-nav="home" data-action="goto" data-view="home" data-i18n="nav_home">Accueil</span>
+        <span class="navlink" data-nav="browse" data-action="goto" data-view="browse" data-i18n="nav_browse">Annonces</span>
+        <span class="navlink" data-nav="account" data-action="goto" data-view="account" data-i18n="nav_account">Mon compte</span>
+        <span class="navlink cta" data-action="goto" data-view="post" data-i18n="nav_post">Déposer une annonce</span>
+        <span class="lang-toggle">
+          <span class="lang-opt" data-action="set-lang" data-lang="fr">FR</span><span class="lang-sep">/</span><span class="lang-opt" data-action="set-lang" data-lang="en">EN</span>
+        </span>
       </nav>
     </div>
   </header>
@@ -270,13 +282,13 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.9 2H22l-7.5 8.6L23.3 22H16.7l-5.2-6.8L5.6 22H2.4l8-9.2L1.5 2h6.8l4.7 6.2L18.9 2zm-1.1 18h1.7L7.3 4H5.5l12.3 16z"/></svg>
       </a>
     </div>
-    <p><span class="footer-link" data-action="goto" data-view="legal">Mentions légales &amp; confidentialité (RGPD)</span></p>
+    <p><span class="footer-link" data-action="goto" data-view="legal" data-i18n="footer_legal">Mentions légales &amp; confidentialité (RGPD)</span></p>
   </footer>
   <div id="cookie-banner" class="cookie-banner" style="display:none;">
-    <p>Ce site utilise un cookie pour retenir vos préférences de recherche (type d'annonce, secteur, mode) d'une visite à l'autre. Aucune publicité, aucun cookie de mesure d'audience ou de suivi publicitaire.</p>
+    <p data-i18n="cookie_text">Ce site utilise un cookie pour retenir vos préférences de recherche (type d'annonce, secteur, mode) d'une visite à l'autre. Aucune publicité, aucun cookie de mesure d'audience ou de suivi publicitaire.</p>
     <div class="cookie-actions">
-      <button class="btn sm outline" data-action="cookies-decline">Refuser</button>
-      <button class="btn sm accent" data-action="cookies-accept">Accepter</button>
+      <button class="btn sm outline" data-action="cookies-decline" data-i18n="cookie_decline">Refuser</button>
+      <button class="btn sm accent" data-action="cookies-accept" data-i18n="cookie_accept">Accepter</button>
     </div>
   </div>
 </div>
@@ -302,6 +314,128 @@
     supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   }
   /* ================================================ */
+
+  var I18N = {
+    fr: {
+      tagline: "Entreprises &amp; agents commerciaux",
+      nav_home: "Accueil", nav_browse: "Annonces", nav_account: "Mon compte", nav_post: "Déposer une annonce",
+      hero_h1: "Le point de rendez-vous des agents commerciaux et des entreprises.",
+      hero_lead: "Une entreprise cherche un agent pour porter ses produits sur un secteur. Un agent cherche une entreprise à représenter. Ici, ils se trouvent — sans intermédiaire, sans abonnement, sans fichier client à remplir.",
+      pitch_a_title: "Je suis une entreprise", pitch_a_desc: "Je cherche un agent commercial pour représenter mes produits sur un secteur.",
+      pitch_b_title: "Je suis agent commercial", pitch_b_desc: "Je cherche une entreprise à représenter, sur mon secteur et ma zone.",
+      search_ph: "Un secteur, une ville, un mot-clé…", search_btn: "Chercher",
+      stat_members: "Membres inscrits", stat_ent: "Annonces entreprises", stat_agt: "Annonces agents",
+      map_title: "Entreprises qui recrutent en ce moment", map_sub: "Localisez les mandats disponibles et filtrez selon vos critères.",
+      map_loc: "Localisation", map_sector: "Secteur", map_mode: "Présentiel / distanciel", map_canal: "Canal de contact", map_all_sectors:"Tous secteurs", map_all_canaux:"Tous les canaux", map_commission:"Commission", map_all_commission:"Toutes commissions",
+      recent_title: "Dernières annonces", see_all: "Voir tout →",
+      browse_title: "Toutes les annonces", reset: "Réinitialiser",
+      type_all: "Tous les types", type_ent: "Entreprise recrute", type_agt: "Agent disponible",
+      zone_ph: "Ville / zone", keyword_ph: "Mot-clé",
+      empty_no_ads: "Aucune annonce pour le moment.", empty_no_ads_sub: "Soyez la première entreprise ou le premier agent à en déposer une.",
+      empty_no_match: "Aucune annonce ne correspond.", empty_no_match_sub: "Essayez d'élargir vos critères, ou déposez la vôtre.",
+      back_to_ads: "← Retour aux annonces",
+      post_title: "Déposer une annonce", post_sub: "Publication gratuite, valable 3 mois.",
+      need_login: "Connectez-vous pour publier une annonce.", need_login_sub: "Un compte gratuit permet de gérer vos annonces et d'y associer vos réseaux sociaux.", login_or_signup: "Se connecter / créer un compte",
+      opt_ent: "Entreprise", opt_agt: "Agent commercial", opt_ent_sub: "Je recherche un agent commercial", opt_agt_sub: "Je recherche une entreprise à représenter",
+      lbl_titre: "Titre de l'annonce", lbl_secteur: "Secteur d'activité", lbl_ville: "Ville", lbl_ville_hint: "Tapez les premières lettres, choisissez dans la liste.",
+      lbl_zone: "Zone couverte (optionnel)", lbl_commission: "Commission proposée (%)", lbl_commission_hint: "Laisse vide si non déterminée à ce stade.",
+      lbl_mode: "Mode de collaboration", lbl_canal: "Canal de contact préféré", lbl_desc: "Description", lbl_email: "Email de contact", lbl_email_hint: "Utilisé pour recevoir les messages des personnes intéressées.",
+      choose: "Choisir…", publish: "Publier l'annonce",
+      account_title: "Mon compte", account_sub: "Retrouvez vos annonces et vos informations de contact.",
+      login: "Se connecter", signup: "Créer un compte", email_lbl: "Email", pwd_lbl: "Mot de passe", pwd_hint: "6 caractères minimum",
+      forgot: "Mot de passe oublié ?", create_account: "Créer mon compte", logout: "Se déconnecter",
+      my_info: "Mes informations", my_name: "Nom / raison sociale", my_presentation: "Présentation de votre activité",
+      save_info: "Enregistrer mes informations", my_ads: "Mes annonces", new_ad: "+ Nouvelle annonce",
+      no_ads_yet: "Aucune annonce publiée avec ce compte pour l'instant.", withdraw: "Retirer",
+      my_favs: "Mes favoris", no_favs: "Aucune annonce mise en favoris pour l'instant.",
+      danger_title: "Supprimer mon compte", danger_desc: "Supprime définitivement votre compte, votre profil et toutes vos annonces. Action immédiate et irréversible.",
+      danger_btn: "Supprimer définitivement mon compte",
+      contact_title: "Contacter", contact_note: "Message envoyé directement depuis votre messagerie — aucune donnée n'est conservée sur ce site.",
+      contact_name: "Votre nom", contact_email: "Votre email", contact_msg: "Votre message", contact_send: "Envoyer le message",
+      footer_legal: "Mentions légales &amp; confidentialité (RGPD)",
+      cookie_text: "Ce site utilise un cookie pour retenir vos préférences de recherche (type d'annonce, secteur, mode) d'une visite à l'autre. Aucune publicité, aucun cookie de mesure d'audience ou de suivi publicitaire.",
+      cookie_decline: "Refuser", cookie_accept: "Accepter",
+      view_profile: "Voir le profil →", active_ads: "Annonces actives",
+      ad_gone: "Cette annonce n'existe plus.",
+      expired_pill: "Expirée", expires_in: " j",
+      expired_title: "Cette annonce a expiré.",
+      expired_note_ent: "Les annonces sont valables 3 mois. L'entreprise peut en déposer une nouvelle.",
+      expired_note_agt: "Les annonces sont valables 3 mois. L'agent peut en déposer une nouvelle.",
+      contact_ent: "Contacter l'entreprise", contact_agt: "Contacter l'agent",
+      fav_add: "Ajouter aux favoris", fav_remove: "Retirer des favoris",
+      ph_titre_ent: "Ex : Agent commercial cosmétique bio — Grand Ouest", ph_titre_agt: "Ex : Agent expérimenté BTP cherche mandat en Bretagne",
+      ph_desc_ent: "Produits représentés, type de mandat, commission proposée, portefeuille existant ou non…",
+      ph_desc_agt: "Votre expérience, vos secteurs maîtrisés, votre portefeuille clients, vos disponibilités…",
+      ph_presentation_ent: "Qui vous êtes, vos produits, votre marché…", ph_presentation_agt: "Votre parcours, vos secteurs, votre zone de chalandise…",
+      click_star_hint: "Cliquez sur l'étoile ☆ d'une annonce pour la retrouver ici.",
+      connected_as: "Connecté en tant que", presentation_hint: "Visible sur votre profil public, accessible depuis vos annonces.",
+      profile_not_found: "Ce profil est introuvable.", no_name: "Profil sans nom",
+      reset_pwd_title: "Choisir un nouveau mot de passe", reset_pwd_sub: "Vous arrivez depuis le lien reçu par email.",
+      new_pwd: "Nouveau mot de passe", confirm_pwd: "Confirmer le mot de passe", confirm_pwd_ph: "Retapez le même mot de passe",
+      save_new_pwd: "Enregistrer le nouveau mot de passe",
+      legal_en_notice: "This page is only available in French, as required for a French commercial website. Contact us if you need an English summary."
+    },
+    en: {
+      tagline: "Companies &amp; independent sales reps",
+      nav_home: "Home", nav_browse: "Listings", nav_account: "My account", nav_post: "Post a listing",
+      hero_h1: "Where independent sales reps and companies meet.",
+      hero_lead: "A company is looking for a rep to carry its products in a given sector. A rep is looking for a company to represent. Here, they find each other — no middleman, no subscription, no client database to fill in.",
+      pitch_a_title: "I'm a company", pitch_a_desc: "I'm looking for a sales rep to represent my products in a sector.",
+      pitch_b_title: "I'm a sales rep", pitch_b_desc: "I'm looking for a company to represent, in my sector and area.",
+      search_ph: "A sector, a city, a keyword…", search_btn: "Search",
+      stat_members: "Registered members", stat_ent: "Company listings", stat_agt: "Rep listings",
+      map_title: "Companies hiring right now", map_sub: "Locate available mandates and filter by your criteria.",
+      map_loc: "Location", map_sector: "Sector", map_mode: "On-site / remote", map_canal: "Contact channel", map_all_sectors:"All sectors", map_all_canaux:"All channels", map_commission:"Commission", map_all_commission:"All commissions",
+      recent_title: "Latest listings", see_all: "See all →",
+      browse_title: "All listings", reset: "Reset",
+      type_all: "All types", type_ent: "Company hiring", type_agt: "Rep available",
+      zone_ph: "City / area", keyword_ph: "Keyword",
+      empty_no_ads: "No listings yet.", empty_no_ads_sub: "Be the first company or rep to post one.",
+      empty_no_match: "No listing matches.", empty_no_match_sub: "Try widening your criteria, or post your own.",
+      back_to_ads: "← Back to listings",
+      post_title: "Post a listing", post_sub: "Free to publish, valid for 3 months.",
+      need_login: "Log in to post a listing.", need_login_sub: "A free account lets you manage your listings and add your social links.", login_or_signup: "Log in / create an account",
+      opt_ent: "Company", opt_agt: "Sales rep", opt_ent_sub: "I'm looking for a sales rep", opt_agt_sub: "I'm looking for a company to represent",
+      lbl_titre: "Listing title", lbl_secteur: "Business sector", lbl_ville: "City", lbl_ville_hint: "Type the first letters, then pick from the list.",
+      lbl_zone: "Area covered (optional)", lbl_commission: "Commission offered (%)", lbl_commission_hint: "Leave blank if not decided yet.",
+      lbl_mode: "Working arrangement", lbl_canal: "Preferred contact channel", lbl_desc: "Description", lbl_email: "Contact email", lbl_email_hint: "Used to receive messages from interested people.",
+      choose: "Choose…", publish: "Publish listing",
+      account_title: "My account", account_sub: "Find your listings and contact details.",
+      login: "Log in", signup: "Create account", email_lbl: "Email", pwd_lbl: "Password", pwd_hint: "6 characters minimum",
+      forgot: "Forgot password?", create_account: "Create my account", logout: "Log out",
+      my_info: "My information", my_name: "Name / company name", my_presentation: "Describe your business",
+      save_info: "Save my information", my_ads: "My listings", new_ad: "+ New listing",
+      no_ads_yet: "No listing posted with this account yet.", withdraw: "Withdraw",
+      my_favs: "My favourites", no_favs: "No listing saved as favourite yet.",
+      danger_title: "Delete my account", danger_desc: "Permanently deletes your account, profile and all your listings. Immediate and irreversible.",
+      danger_btn: "Permanently delete my account",
+      contact_title: "Contact", contact_note: "Message sent directly from your own mailbox — no data is stored on this site.",
+      contact_name: "Your name", contact_email: "Your email", contact_msg: "Your message", contact_send: "Send message",
+      footer_legal: "Legal notice &amp; privacy (GDPR)",
+      cookie_text: "This site uses a cookie to remember your search preferences (listing type, sector, mode) between visits. No advertising, no audience-measurement or tracking cookies.",
+      cookie_decline: "Decline", cookie_accept: "Accept",
+      view_profile: "View profile →", active_ads: "Active listings",
+      ad_gone: "This listing no longer exists.",
+      expired_pill: "Expired", expires_in: "d",
+      expired_title: "This listing has expired.",
+      expired_note_ent: "Listings are valid for 3 months. The company can post a new one.",
+      expired_note_agt: "Listings are valid for 3 months. The rep can post a new one.",
+      contact_ent: "Contact the company", contact_agt: "Contact the rep",
+      fav_add: "Add to favourites", fav_remove: "Remove from favourites",
+      ph_titre_ent: "E.g.: Organic cosmetics sales rep — Western France", ph_titre_agt: "E.g.: Experienced construction rep looking for a mandate in Brittany",
+      ph_desc_ent: "Products represented, type of mandate, commission offered, existing client base or not…",
+      ph_desc_agt: "Your experience, sectors you know, client portfolio, availability…",
+      ph_presentation_ent: "Who you are, your products, your market…", ph_presentation_agt: "Your background, your sectors, your catchment area…",
+      click_star_hint: "Click the ☆ star on a listing to find it here.",
+      connected_as: "Logged in as", presentation_hint: "Shown on your public profile, reachable from your listings.",
+      profile_not_found: "This profile could not be found.", no_name: "Unnamed profile",
+      reset_pwd_title: "Choose a new password", reset_pwd_sub: "You've arrived here via the link received by email.",
+      new_pwd: "New password", confirm_pwd: "Confirm password", confirm_pwd_ph: "Type the same password again",
+      save_new_pwd: "Save new password",
+      legal_en_notice: ""
+    }
+  };
+  function tr(key){ return (I18N[state.lang] && I18N[state.lang][key]) || I18N.fr[key] || key; }
 
   var SECTORS = [
     "Agriculture","Agroalimentaire","Ameublement","Aéronautique","Architecture / Décoration",
@@ -344,7 +478,8 @@
     user: undefined,       /* utilisateur Supabase Auth connecté ({id,email}), null si déconnecté */
     authMode: "login",     /* "login" ou "signup", pour l'écran Mon compte */
     profils: null,          /* { "user-id": {userId,email,type,nom,site,linkedin,...} } */
-    favoris: {}              /* { "ad-id": true } — favoris de l'utilisateur connecté */
+    favoris: {},              /* { "ad-id": true } — favoris de l'utilisateur connecté */
+    lang: (function(){ try{ return localStorage.getItem("agentzone_lang") || "fr"; }catch(e){ return "fr"; } })()
   };
 
   var homeMap = null, homeMarkers = null;
@@ -633,54 +768,54 @@
 
     html += '<section class="hero">';
     html += '  <div class="hero-top"><svg class="connector" viewBox="0 0 64 22" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="8" cy="16" r="5" fill="#0F7A6A"/><circle cx="56" cy="6" r="5" fill="#FF5A33"/><path d="M13 15 51 7" stroke="#C9C8BE" stroke-width="2" class="dash-move" stroke-linecap="round"/></svg></div>';
-    html += '  <h1 class="display">Le point de rendez-vous des agents commerciaux et des entreprises.</h1>';
-    html += '  <p class="lead">Une entreprise cherche un agent pour porter ses produits sur un secteur. Un agent cherche une entreprise à représenter. Ici, ils se trouvent — sans intermédiaire, sans abonnement, sans fichier client à remplir.</p>';
+    html += '  <h1 class="display">'+tr('hero_h1')+'</h1>';
+    html += '  <p class="lead">'+tr('hero_lead')+'</p>';
     html += '  <div class="pitch-row">';
-    html += '    <div class="pitch-card a" data-action="start-post" data-type="entreprise"><div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="9" width="18" height="12" rx="1"/><path d="M9 21V9l3-5 3 5v12"/></svg></div><h3>Je suis une entreprise</h3><p>Je cherche un agent commercial pour représenter mes produits sur un secteur.</p></div>';
-    html += '    <div class="pitch-card b" data-action="start-post" data-type="agent"><div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg></div><h3>Je suis agent commercial</h3><p>Je cherche une entreprise à représenter, sur mon secteur et ma zone.</p></div>';
+    html += '    <div class="pitch-card a" data-action="start-post" data-type="entreprise"><div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="9" width="18" height="12" rx="1"/><path d="M9 21V9l3-5 3 5v12"/></svg></div><h3>'+tr('pitch_a_title')+'</h3><p>'+tr('pitch_a_desc')+'</p></div>';
+    html += '    <div class="pitch-card b" data-action="start-post" data-type="agent"><div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg></div><h3>'+tr('pitch_b_title')+'</h3><p>'+tr('pitch_b_desc')+'</p></div>';
     html += '  </div>';
     html += '  <div class="search-bar"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#666B72" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>';
-    html += '    <input id="home-q" data-filter="home-q" placeholder="Un secteur, une ville, un mot-clé…" />';
-    html += '    <button class="btn" data-action="home-search">Chercher</button>';
+    html += '    <input id="home-q" data-filter="home-q" placeholder="'+tr('search_ph')+'" />';
+    html += '    <button class="btn" data-action="home-search">'+tr('search_btn')+'</button>';
     html += '  </div>';
     html += '</section>';
 
     html += '<section class="stats-bar">';
     if(ads === null){
-      html += '<div class="stat p1"><span class="stat-num">…</span><span class="stat-label">Membres inscrits</span></div>';
-      html += '<div class="stat p2"><span class="stat-num">…</span><span class="stat-label">Annonces entreprises</span></div>';
-      html += '<div class="stat p3"><span class="stat-num">…</span><span class="stat-label">Annonces agents</span></div>';
+      html += '<div class="stat p1"><span class="stat-num">…</span><span class="stat-label">'+tr('stat_members')+'</span></div>';
+      html += '<div class="stat p2"><span class="stat-num">…</span><span class="stat-label">'+tr('stat_ent')+'</span></div>';
+      html += '<div class="stat p3"><span class="stat-num">…</span><span class="stat-label">'+tr('stat_agt')+'</span></div>';
     } else {
       var membersCount = state.profils ? Object.keys(state.profils).length : 0;
       var entCount = entreprises.length;
       var agtCount = active.filter(function(a){ return a.type==="agent"; }).length;
-      html += '<div class="stat p1"><span class="stat-num">'+membersCount+'</span><span class="stat-label">Membres inscrits</span></div>';
-      html += '<div class="stat p2"><span class="stat-num">'+entCount+'</span><span class="stat-label">Annonces entreprises</span></div>';
-      html += '<div class="stat p3"><span class="stat-num">'+agtCount+'</span><span class="stat-label">Annonces agents</span></div>';
+      html += '<div class="stat p1"><span class="stat-num">'+membersCount+'</span><span class="stat-label">'+tr('stat_members')+'</span></div>';
+      html += '<div class="stat p2"><span class="stat-num">'+entCount+'</span><span class="stat-label">'+tr('stat_ent')+'</span></div>';
+      html += '<div class="stat p3"><span class="stat-num">'+agtCount+'</span><span class="stat-label">'+tr('stat_agt')+'</span></div>';
     }
     html += '</section>';
     html += '<section id="map-section">';
-    html += '  <div class="section-head"><div><h2>Entreprises qui recrutent en ce moment</h2><p>Localisez les mandats disponibles et filtrez selon vos critères.</p></div></div>';
+    html += '  <div class="section-head"><div><h2>'+tr('map_title')+'</h2><p>'+tr('map_sub')+'</p></div></div>';
     html += '  <div class="map-wrap">';
     html += '    <div class="map-filters">';
-    html += '      <div><span class="f-label">Localisation</span><input data-filter="map-loc" placeholder="Ville, région…"/></div>';
-    html += '      <div><span class="f-label">Secteur</span><select data-filter="map-secteur"><option value="">Tous secteurs</option>'+optionsHtml(SECTORS,"")+'</select></div>';
-    html += '      <div><span class="f-label">Mode</span><select data-filter="map-mode"><option value="tous">Présentiel / distanciel</option>'+optionsHtml(MODES,"")+'</select></div>';
-    html += '      <div><span class="f-label">Canal de contact</span><select data-filter="map-canal"><option value="tous">Tous les canaux</option>'+optionsHtml(CANAUX,"")+'</select></div>';
-    html += '      <div><span class="f-label">Commission</span><select data-filter="map-commission"><option value="tous">Toutes commissions</option>'+COMMISSION_RANGES.map(function(r){ return '<option value="'+r.key+'">'+r.label+'</option>'; }).join("")+'</select></div>';
+    html += '      <div><span class="f-label">'+tr('map_loc')+'</span><div class="ac-wrap"><input data-filter="map-loc" data-autocomplete="commune" autocomplete="off" placeholder="'+(state.lang==="en"?"City, region…":"Ville, région…")+'"/><div class="ac-list" data-ac-list></div></div></div>';
+    html += '      <div><span class="f-label">'+tr('map_sector')+'</span><select data-filter="map-secteur"><option value="">'+tr('map_all_sectors')+'</option>'+optionsHtml(SECTORS,"")+'</select></div>';
+    html += '      <div><span class="f-label">Mode</span><select data-filter="map-mode"><option value="tous">'+tr('map_mode')+'</option>'+optionsHtml(MODES,"")+'</select></div>';
+    html += '      <div><span class="f-label">'+tr('map_canal')+'</span><select data-filter="map-canal"><option value="tous">'+tr('map_all_canaux')+'</option>'+optionsHtml(CANAUX,"")+'</select></div>';
+    html += '      <div><span class="f-label">'+tr('map_commission')+'</span><select data-filter="map-commission"><option value="tous">'+tr('map_all_commission')+'</option>'+COMMISSION_RANGES.map(function(r){ return '<option value="'+r.key+'">'+r.label+'</option>'; }).join("")+'</select></div>';
     html += '    </div>';
     html += '    <div>';
-    if(ads === null){ html += '<div class="map-empty">Chargement de la carte…</div>'; }
+    if(ads === null){ html += '<div class="map-empty">'+(state.lang==="en"?"Loading map…":"Chargement de la carte…")+'</div>'; }
     else{
       html += '<div id="leaflet-map"></div>';
-      html += '<div class="map-legend"><span class="pin" style="width:11px;height:11px;"></span> '+(entreprises.length===0?'Aucune annonce entreprise pour l\'instant — la carte se remplira à la première publication.':'Entreprise avec une annonce active — cliquez un point pour voir le détail.')+'</div>';
+      html += '<div class="map-legend"><span class="pin" style="width:11px;height:11px;"></span> '+(entreprises.length===0?(state.lang==="en"?"No company listing yet — the map will fill in as soon as the first one is posted.":'Aucune annonce entreprise pour l\'instant — la carte se remplira à la première publication.'):(state.lang==="en"?"Company with an active listing — click a point to see the detail.":'Entreprise avec une annonce active — cliquez un point pour voir le détail.'))+'</div>';
     }
     html += '    </div></div></section>';
 
     html += '<section>';
-    html += '  <div class="section-head"><div><h2>Dernières annonces</h2></div>' + (recent.length>0 ? '<span class="link-more" data-action="goto" data-view="browse">Voir tout →</span>' : '') + '</div>';
+    html += '  <div class="section-head"><div><h2>'+tr('recent_title')+'</h2></div>' + (recent.length>0 ? '<span class="link-more" data-action="goto" data-view="browse">'+tr('see_all')+'</span>' : '') + '</div>';
     if(ads === null){ html += loadingHtml(); }
-    else if(recent.length === 0){ html += '<div class="empty"><strong>Aucune annonce pour le moment.</strong>Soyez la première entreprise ou le premier agent à en déposer une.</div>'; }
+    else if(recent.length === 0){ html += '<div class="empty"><strong>'+tr('empty_no_ads')+'</strong>'+tr('empty_no_ads_sub')+'</div>'; }
     else{ html += '<div class="ad-grid">' + recent.map(adCardHtml).join("") + '</div>'; }
     html += '</section>';
     return html;
@@ -730,18 +865,18 @@
     var f = state.browseFilters;
     var list = state.ads === null ? [] : filteredAds(activeAds(), f);
     var html = '<div style="padding-top:26px;">';
-    html += '<div class="section-head" style="margin-top:0;"><div><h2>Toutes les annonces</h2></div></div>';
+    html += '<div class="section-head" style="margin-top:0;"><div><h2>'+tr('browse_title')+'</h2></div></div>';
     html += '<div class="filters-bar">';
-    html += '<select data-filter="browse-type"><option value="tous"'+(f.type==="tous"?" selected":"")+'>Tous les types</option><option value="entreprise"'+(f.type==="entreprise"?" selected":"")+'>Entreprise recrute</option><option value="agent"'+(f.type==="agent"?" selected":"")+'>Agent disponible</option></select>';
-    html += '<select data-filter="browse-secteur"><option value="">Tous secteurs</option>'+optionsHtml(SECTORS, f.secteur)+'</select>';
-    html += '<select data-filter="browse-mode"><option value="tous"'+(f.mode==="tous"?" selected":"")+'>Présentiel / distanciel</option>'+optionsHtml(MODES, f.mode==="tous"?"":f.mode)+'</select>';
-    html += '<select data-filter="browse-commission"><option value="tous"'+(f.commission==="tous"?" selected":"")+'>Toutes commissions</option>'+COMMISSION_RANGES.map(function(r){ return '<option value="'+r.key+'"'+(f.commission===r.key?" selected":"")+'>'+r.label+'</option>'; }).join("")+'</select>';
-    html += '<input data-filter="browse-zone" placeholder="Ville / zone" value="'+esc(f.zone)+'"/>';
-    html += '<input data-filter="browse-q" placeholder="Mot-clé" value="'+esc(f.q)+'"/>';
-    if(f.type!=="tous"||f.secteur||f.zone||f.q||f.mode!=="tous"||f.commission!=="tous"){ html += '<button class="btn outline sm" data-action="reset-browse-filters">Réinitialiser</button>'; }
+    html += '<select data-filter="browse-type"><option value="tous"'+(f.type==="tous"?" selected":"")+'>'+tr('type_all')+'</option><option value="entreprise"'+(f.type==="entreprise"?" selected":"")+'>'+tr('type_ent')+'</option><option value="agent"'+(f.type==="agent"?" selected":"")+'>'+tr('type_agt')+'</option></select>';
+    html += '<select data-filter="browse-secteur"><option value="">'+tr('map_all_sectors')+'</option>'+optionsHtml(SECTORS, f.secteur)+'</select>';
+    html += '<select data-filter="browse-mode"><option value="tous"'+(f.mode==="tous"?" selected":"")+'>'+tr('map_mode')+'</option>'+optionsHtml(MODES, f.mode==="tous"?"":f.mode)+'</select>';
+    html += '<select data-filter="browse-commission"><option value="tous"'+(f.commission==="tous"?" selected":"")+'>'+tr('map_all_commission')+'</option>'+COMMISSION_RANGES.map(function(r){ return '<option value="'+r.key+'"'+(f.commission===r.key?" selected":"")+'>'+r.label+'</option>'; }).join("")+'</select>';
+    html += '<div class="ac-wrap" style="flex:1;min-width:140px;"><input data-filter="browse-zone" data-autocomplete="commune" autocomplete="off" placeholder="'+tr('zone_ph')+'" value="'+esc(f.zone)+'"/><div class="ac-list" data-ac-list></div></div>';
+    html += '<input data-filter="browse-q" placeholder="'+tr('keyword_ph')+'" value="'+esc(f.q)+'"/>';
+    if(f.type!=="tous"||f.secteur||f.zone||f.q||f.mode!=="tous"||f.commission!=="tous"){ html += '<button class="btn outline sm" data-action="reset-browse-filters">'+tr('reset')+'</button>'; }
     html += '</div>';
     if(state.ads === null){ html += loadingHtml(); }
-    else if(list.length===0){ html += '<div class="empty"><strong>Aucune annonce ne correspond.</strong>Essayez d\'élargir vos critères, ou déposez la vôtre.</div>'; }
+    else if(list.length===0){ html += '<div class="empty"><strong>'+tr('empty_no_match')+'</strong>'+tr('empty_no_match_sub')+'</div>'; }
     else{ html += '<div class="ad-grid">' + list.map(adCardHtml).join("") + '</div>'; }
     html += '</div>';
     return html;
@@ -756,8 +891,8 @@
         '<div class="ad-meta"><span>'+esc(a.secteur)+'</span><span>'+esc(a.ville||a.zoneCouverte||"")+'</span><span>'+esc(a.mode)+'</span>'+(a.commission?'<span>Commission '+esc(a.commission)+' %</span>':'')+'<span>'+timeAgo(a.createdAt)+'</span></div>'+
       '</div>'+
       '<div class="tags">'+
-        '<button class="fav-btn'+(fav?" on":"")+'" data-action="toggle-favori" data-id="'+a.id+'" aria-label="Favori" title="'+(fav?"Retirer des favoris":"Ajouter aux favoris")+'">'+(fav?"★":"☆")+'</button>'+
-        '<span class="pill '+(a.type==="entreprise"?"entreprise":"agent")+'">'+(a.type==="entreprise"?"Entreprise":"Agent")+'</span>'+
+        '<button class="fav-btn'+(fav?" on":"")+'" data-action="toggle-favori" data-id="'+a.id+'" aria-label="Favorite" title="'+(fav?tr('fav_remove'):tr('fav_add'))+'">'+(fav?"★":"☆")+'</button>'+
+        '<span class="pill '+(a.type==="entreprise"?"entreprise":"agent")+'">'+(a.type==="entreprise"?tr('opt_ent'):tr('opt_agt'))+'</span>'+
       '</div>'+
     '</div>';
   }
@@ -766,21 +901,21 @@
   function renderDetail(id){
     var ad = (state.ads||[]).find(function(a){ return a.id===id; });
     if(!ad){
-      return '<div class="empty" style="margin-top:26px;"><strong>Cette annonce n\'existe plus.</strong><div style="margin-top:12px;"><span class="back-link" style="margin:0;justify-content:center;" data-action="goto" data-view="browse">← Retour aux annonces</span></div></div>';
+      return '<div class="empty" style="margin-top:26px;"><strong>'+tr('ad_gone')+'</strong><div style="margin-top:12px;"><span class="back-link" style="margin:0;justify-content:center;" data-action="goto" data-view="browse">'+tr('back_to_ads')+'</span></div></div>';
     }
     var expired = isExpired(ad);
-    var html = '<span class="back-link" data-action="goto" data-view="browse">← Retour aux annonces</span>';
+    var html = '<span class="back-link" data-action="goto" data-view="browse">'+tr('back_to_ads')+'</span>';
     html += '<div class="fiche">';
     var fav = !!state.favoris[ad.id];
     html += '  <div class="fiche-head"><div><span class="ref mono" style="font-size:12px;color:var(--ink-soft)">'+ad.ref+'</span><h2>'+esc(ad.titre)+'</h2></div>';
-    html += '  <div class="fiche-tags"><button class="fav-btn'+(fav?" on":"")+'" data-action="toggle-favori" data-id="'+ad.id+'" title="'+(fav?"Retirer des favoris":"Ajouter aux favoris")+'">'+(fav?"★":"☆")+'</button><span class="pill '+(ad.type==="entreprise"?"entreprise":"agent")+'">'+(ad.type==="entreprise"?"Entreprise":"Agent")+'</span><span class="pill neutral">'+esc(ad.mode)+'</span>'+(expired?'<span class="pill warn">Expirée</span>':'<span class="pill neutral">Expire dans '+daysLeft(ad)+' j</span>')+'</div></div>';
-    html += '  <div class="fiche-meta"><span>'+esc(ad.secteur)+'</span><span>'+esc(ad.ville)+(ad.zoneCouverte? " · "+esc(ad.zoneCouverte) : "")+'</span>'+(ad.commission?'<span>Commission proposée : '+esc(ad.commission)+' %</span>':'')+'<span>Canal préféré : '+esc(ad.canal)+'</span><span>Publiée '+timeAgo(ad.createdAt)+'</span></div>';
+    html += '  <div class="fiche-tags"><button class="fav-btn'+(fav?" on":"")+'" data-action="toggle-favori" data-id="'+ad.id+'" title="'+(fav?tr('fav_remove'):tr('fav_add'))+'">'+(fav?"★":"☆")+'</button><span class="pill '+(ad.type==="entreprise"?"entreprise":"agent")+'">'+(ad.type==="entreprise"?tr('opt_ent'):tr('opt_agt'))+'</span><span class="pill neutral">'+esc(ad.mode)+'</span>'+(expired?'<span class="pill warn">'+tr('expired_pill')+'</span>':'<span class="pill neutral">'+(state.lang==="en"?"Expires in "+daysLeft(ad)+tr('expires_in'):"Expire dans "+daysLeft(ad)+tr('expires_in'))+'</span>')+'</div></div>';
+    html += '  <div class="fiche-meta"><span>'+esc(ad.secteur)+'</span><span>'+esc(ad.ville)+(ad.zoneCouverte? " · "+esc(ad.zoneCouverte) : "")+'</span>'+(ad.commission?'<span>'+(state.lang==="en"?"Commission offered: ":"Commission proposée : ")+esc(ad.commission)+' %</span>':'')+'<span>'+(state.lang==="en"?"Preferred channel: ":"Canal préféré : ")+esc(ad.canal)+'</span><span>'+(state.lang==="en"?"Posted ":"Publiée ")+timeAgo(ad.createdAt)+'</span></div>';
     html += '  <div class="fiche-desc">'+esc(ad.description)+'</div>';
     var profil = (state.profils && ad.userId) ? state.profils[ad.userId] : null;
     var socialLinks = profil ? SOCIALS.filter(function(s){ return profil[s.key]; }) : [];
     if(ad.userId){
       html += '  <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">';
-      html += '<span class="link-more" data-action="goto" data-view="profile" data-id="'+ad.userId+'">Voir le profil →</span>';
+      html += '<span class="link-more" data-action="goto" data-view="profile" data-id="'+ad.userId+'">'+tr('view_profile')+'</span>';
       socialLinks.forEach(function(s){
         html += '<a href="'+esc(profil[s.key])+'" target="_blank" rel="noopener noreferrer" class="pill neutral">'+s.label+' ↗</a>';
       });
@@ -789,16 +924,16 @@
     html += '</div>';
 
     if(expired){
-      html += '<div class="empty"><strong>Cette annonce a expiré.</strong>Les annonces sont valables 3 mois. '+(ad.type==="entreprise"?"L'entreprise":"L'agent")+' peut en déposer une nouvelle.</div>';
+      html += '<div class="empty"><strong>'+tr('expired_title')+'</strong>'+(ad.type==="entreprise"?tr('expired_note_ent'):tr('expired_note_agt'))+'</div>';
     } else {
       html += '<div class="contact-box">';
-      html += '  <h3>Contacter '+(ad.type==="entreprise"?"l'entreprise":"l'agent")+'</h3>';
-      html += '  <p class="note">Message envoyé directement depuis votre messagerie — aucune donnée n\'est conservée sur ce site.</p>';
-      html += '  <div id="contact-sent" style="display:none;align-items:center;gap:8px;font-size:14px;"><span style="color:var(--teal);">✓</span> Votre messagerie s\'est ouverte avec le message pré-rempli. Il ne reste qu\'à l\'envoyer.</div>';
+      html += '  <h3>'+(ad.type==="entreprise"?tr('contact_ent'):tr('contact_agt'))+'</h3>';
+      html += '  <p class="note">'+tr('contact_note')+'</p>';
+      html += '  <div id="contact-sent" style="display:none;align-items:center;gap:8px;font-size:14px;"><span style="color:var(--teal);">✓</span> '+(state.lang==="en"?"Your mailbox opened with the message pre-filled. All that's left is to send it.":"Votre messagerie s\'est ouverte avec le message pré-rempli. Il ne reste qu\'à l\'envoyer.")+'</div>';
       html += '  <form class="card-form" data-form="contact" data-ad-id="'+ad.id+'">';
-      html += '    <div class="field-row"><div class="field"><span class="field-label">Votre nom</span><input required name="name" placeholder="Jean Dupont"/></div><div class="field"><span class="field-label">Votre email</span><input required type="email" name="email" placeholder="jean@exemple.fr"/></div></div>';
-      html += '    <div class="field"><span class="field-label">Votre message</span><textarea required name="message" placeholder="Bonjour, votre annonce m\'intéresse…"></textarea></div>';
-      html += '    <div><button class="btn accent" type="submit">Envoyer le message</button></div>';
+      html += '    <div class="field-row"><div class="field"><span class="field-label">'+tr('contact_name')+'</span><input required name="name" placeholder="Jean Dupont"/></div><div class="field"><span class="field-label">'+tr('contact_email')+'</span><input required type="email" name="email" placeholder="jean@exemple.fr"/></div></div>';
+      html += '    <div class="field"><span class="field-label">'+tr('contact_msg')+'</span><textarea required name="message" placeholder="'+(state.lang==="en"?"Hello, I'm interested in your listing…":"Bonjour, votre annonce m\'intéresse…")+'"></textarea></div>';
+      html += '    <div><button class="btn accent" type="submit">'+tr('contact_send')+'</button></div>';
       html += '  </form></div>';
     }
     return html;
@@ -808,32 +943,32 @@
   function renderPost(){
     var t = state.postType;
     var html = '<div class="post-page" style="padding-top:26px;">';
-    html += '<div class="section-head" style="margin-top:0;"><div><h2>Déposer une annonce</h2><p>Publication gratuite, valable 3 mois.</p></div></div>';
+    html += '<div class="section-head" style="margin-top:0;"><div><h2>'+tr('post_title')+'</h2><p>'+tr('post_sub')+'</p></div></div>';
 
     if(!state.user){
-      html += '<div class="empty"><strong>Connectez-vous pour publier une annonce.</strong>Un compte gratuit permet de gérer vos annonces et d\'y associer vos réseaux sociaux.'+
-        '<div style="margin-top:16px;"><span class="btn accent" data-action="goto" data-view="account">Se connecter / créer un compte</span></div></div>';
+      html += '<div class="empty"><strong>'+tr('need_login')+'</strong>'+tr('need_login_sub')+
+        '<div style="margin-top:16px;"><span class="btn accent" data-action="goto" data-view="account">'+tr('login_or_signup')+'</span></div></div>';
       html += '</div>';
       return html;
     }
 
     html += '<div class="type-toggle">';
-    html += '  <div class="type-opt'+(t==="entreprise"?" on":"")+'" data-action="set-post-type" data-type="entreprise"><strong>Entreprise</strong><small>Je recherche un agent commercial</small></div>';
-    html += '  <div class="type-opt'+(t==="agent"?" on":"")+'" data-action="set-post-type" data-type="agent"><strong>Agent commercial</strong><small>Je recherche une entreprise à représenter</small></div>';
+    html += '  <div class="type-opt'+(t==="entreprise"?" on":"")+'" data-action="set-post-type" data-type="entreprise"><strong>'+tr('opt_ent')+'</strong><small>'+tr('opt_ent_sub')+'</small></div>';
+    html += '  <div class="type-opt'+(t==="agent"?" on":"")+'" data-action="set-post-type" data-type="agent"><strong>'+tr('opt_agt')+'</strong><small>'+tr('opt_agt_sub')+'</small></div>';
     html += '</div>';
     html += '<form class="card-form" data-form="post" style="margin-top:20px;">';
-    html += '  <div class="field"><span class="field-label">Titre de l\'annonce</span><input required name="titre" placeholder="'+(t==="entreprise"?"Ex : Agent commercial cosmétique bio — Grand Ouest":"Ex : Agent expérimenté BTP cherche mandat en Bretagne")+'"/></div>';
-    html += '  <div class="field-row"><div class="field"><span class="field-label">Secteur d\'activité</span><select required name="secteur"><option value="">Choisir…</option>'+optionsHtml(SECTORS,"")+'</select></div>';
-    html += '  <div class="field"><span class="field-label">Ville</span><input required name="ville" placeholder="Ex : Nantes"/><span class="field-hint">Utilisée pour vous situer sur la carte.</span></div></div>';
-    html += '  <div class="field"><span class="field-label">Zone couverte (optionnel)</span><input name="zoneCouverte" placeholder="Ex : Grand Ouest, national, export…"/></div>';
+    html += '  <div class="field"><span class="field-label">'+tr('lbl_titre')+'</span><input required name="titre" placeholder="'+(t==="entreprise"?tr('ph_titre_ent'):tr('ph_titre_agt'))+'"/></div>';
+    html += '  <div class="field-row"><div class="field"><span class="field-label">'+tr('lbl_secteur')+'</span><select required name="secteur"><option value="">'+tr('choose')+'</option>'+optionsHtml(SECTORS,"")+'</select></div>';
+    html += '  <div class="field"><span class="field-label">'+tr('lbl_ville')+'</span><div class="ac-wrap"><input required name="ville" data-autocomplete="commune" autocomplete="off" placeholder="Ex : Nantes"/><div class="ac-list" data-ac-list></div></div><span class="field-hint">'+tr('lbl_ville_hint')+'</span></div></div>';
+    html += '  <div class="field"><span class="field-label">'+tr('lbl_zone')+'</span><input name="zoneCouverte" placeholder="Ex : Grand Ouest, national, export…"/></div>';
     if(t==="entreprise"){
-      html += '  <div class="field"><span class="field-label">Commission proposée (%)</span><input type="number" step="0.5" min="0" max="100" name="commission" placeholder="Ex : 12"/><span class="field-hint">Laisse vide si non déterminée à ce stade.</span></div>';
+      html += '  <div class="field"><span class="field-label">'+tr('lbl_commission')+'</span><input type="number" step="0.5" min="0" max="100" name="commission" placeholder="Ex : 12"/><span class="field-hint">'+tr('lbl_commission_hint')+'</span></div>';
     }
-    html += '  <div class="field-row"><div class="field"><span class="field-label">Mode de collaboration</span><select required name="mode">'+optionsHtml(MODES,"")+'</select></div>';
-    html += '  <div class="field"><span class="field-label">Canal de contact préféré</span><select required name="canal">'+optionsHtml(CANAUX,"")+'</select></div></div>';
-    html += '  <div class="field"><span class="field-label">Description</span><textarea required name="description" placeholder="'+(t==="entreprise"?"Produits représentés, type de mandat, commission proposée, portefeuille existant ou non…":"Votre expérience, vos secteurs maîtrisés, votre portefeuille clients, vos disponibilités…")+'"></textarea></div>';
-    html += '  <div class="field"><span class="field-label">Email de contact</span><input required type="email" name="contactEmail" value="'+esc(state.user.email||"")+'" placeholder="contact@exemple.fr"/><span class="field-hint">Utilisé pour recevoir les messages des personnes intéressées.</span></div>';
-    html += '  <div><button class="btn accent" type="submit">Publier l\'annonce</button></div>';
+    html += '  <div class="field-row"><div class="field"><span class="field-label">'+tr('lbl_mode')+'</span><select required name="mode">'+optionsHtml(MODES,"")+'</select></div>';
+    html += '  <div class="field"><span class="field-label">'+tr('lbl_canal')+'</span><select required name="canal">'+optionsHtml(CANAUX,"")+'</select></div></div>';
+    html += '  <div class="field"><span class="field-label">'+tr('lbl_desc')+'</span><textarea required name="description" placeholder="'+(t==="entreprise"?tr('ph_desc_ent'):tr('ph_desc_agt'))+'"></textarea></div>';
+    html += '  <div class="field"><span class="field-label">'+tr('lbl_email')+'</span><input required type="email" name="contactEmail" value="'+esc(state.user.email||"")+'" placeholder="contact@exemple.fr"/><span class="field-hint">'+tr('lbl_email_hint')+'</span></div>';
+    html += '  <div><button class="btn accent" type="submit">'+tr('publish')+'</button></div>';
     html += '</form></div>';
     return html;
   }
@@ -841,27 +976,27 @@
   /* ---------- RENDER: MON COMPTE ---------- */
   function renderAccount(){
     var html = '<div class="post-page" style="padding-top:26px;">';
-    html += '<div class="section-head" style="margin-top:0;"><div><h2>Mon compte</h2><p>Retrouvez vos annonces et vos informations de contact.</p></div></div>';
+    html += '<div class="section-head" style="margin-top:0;"><div><h2>'+tr('account_title')+'</h2><p>'+tr('account_sub')+'</p></div></div>';
 
     if(!state.user){
       var mode = state.authMode || "login";
       html += '<div class="type-toggle">';
-      html += '  <div class="type-opt'+(mode==="login"?" on":"")+'" data-action="set-auth-mode" data-mode="login"><strong>Se connecter</strong></div>';
-      html += '  <div class="type-opt'+(mode==="signup"?" on":"")+'" data-action="set-auth-mode" data-mode="signup"><strong>Créer un compte</strong></div>';
+      html += '  <div class="type-opt'+(mode==="login"?" on":"")+'" data-action="set-auth-mode" data-mode="login"><strong>'+tr('login')+'</strong></div>';
+      html += '  <div class="type-opt'+(mode==="signup"?" on":"")+'" data-action="set-auth-mode" data-mode="signup"><strong>'+tr('signup')+'</strong></div>';
       html += '</div>';
       html += '<form class="card-form" data-form="'+(mode==="signup"?"account-signup":"account-login")+'" style="margin-top:20px;">';
       if(mode==="signup"){
         html += '  <div class="type-toggle">';
-        html += '    <div class="type-opt'+(state.postType==="entreprise"?" on":"")+'" data-action="set-post-type" data-type="entreprise"><strong>Entreprise</strong></div>';
-        html += '    <div class="type-opt'+(state.postType==="agent"?" on":"")+'" data-action="set-post-type" data-type="agent"><strong>Agent commercial</strong></div>';
+        html += '    <div class="type-opt'+(state.postType==="entreprise"?" on":"")+'" data-action="set-post-type" data-type="entreprise"><strong>'+tr('opt_ent')+'</strong></div>';
+        html += '    <div class="type-opt'+(state.postType==="agent"?" on":"")+'" data-action="set-post-type" data-type="agent"><strong>'+tr('opt_agt')+'</strong></div>';
         html += '  </div>';
       }
-      html += '  <div class="field"><span class="field-label">Email</span><input required type="email" name="email" placeholder="contact@exemple.fr"/></div>';
-      html += '  <div class="field"><span class="field-label">Mot de passe</span><input required type="password" name="password" minlength="6" placeholder="6 caractères minimum"/></div>';
+      html += '  <div class="field"><span class="field-label">'+tr('email_lbl')+'</span><input required type="email" name="email" placeholder="contact@exemple.fr"/></div>';
+      html += '  <div class="field"><span class="field-label">'+tr('pwd_lbl')+'</span><input required type="password" name="password" minlength="6" placeholder="'+tr('pwd_hint')+'"/></div>';
       if(mode==="login"){
-        html += '  <div><span class="link-more" data-action="forgot-password" style="font-weight:500;">Mot de passe oublié ?</span></div>';
+        html += '  <div><span class="link-more" data-action="forgot-password" style="font-weight:500;">'+tr('forgot')+'</span></div>';
       }
-      html += '  <div><button class="btn accent" type="submit">'+(mode==="signup"?"Créer mon compte":"Se connecter")+'</button></div>';
+      html += '  <div><button class="btn accent" type="submit">'+(mode==="signup"?tr('create_account'):tr('login'))+'</button></div>';
       html += '</form>';
       html += '</div>';
       return html;
@@ -873,54 +1008,54 @@
     var favAds = (state.ads||[]).filter(function(a){ return state.favoris[a.id]; })
       .sort(function(a,b){ return new Date(b.createdAt)-new Date(a.createdAt); });
 
-    html += '<div class="banner"><span>Connecté en tant que <b>'+esc(state.user.email)+'</b></span><button class="btn sm outline" data-action="logout">Se déconnecter</button></div>';
+    html += '<div class="banner"><span>'+tr('connected_as')+' <b>'+esc(state.user.email)+'</b></span><button class="btn sm outline" data-action="logout">'+tr('logout')+'</button></div>';
 
-    html += '<div class="section-head" style="margin-top:34px;"><div><h2 style="font-size:17px;">Mes informations</h2></div></div>';
+    html += '<div class="section-head" style="margin-top:34px;"><div><h2 style="font-size:17px;">'+tr('my_info')+'</h2></div></div>';
     html += '<form class="card-form" data-form="account-profile">';
     html += '  <div class="type-toggle">';
-    html += '    <div class="type-opt'+(profil.type==="entreprise"?" on":"")+'" data-action="set-account-type" data-type="entreprise"><strong>Entreprise</strong></div>';
-    html += '    <div class="type-opt'+(profil.type==="agent"?" on":"")+'" data-action="set-account-type" data-type="agent"><strong>Agent commercial</strong></div>';
+    html += '    <div class="type-opt'+(profil.type==="entreprise"?" on":"")+'" data-action="set-account-type" data-type="entreprise"><strong>'+tr('opt_ent')+'</strong></div>';
+    html += '    <div class="type-opt'+(profil.type==="agent"?" on":"")+'" data-action="set-account-type" data-type="agent"><strong>'+tr('opt_agt')+'</strong></div>';
     html += '  </div>';
-    html += '  <div class="field"><span class="field-label">Nom / raison sociale</span><input name="nom" value="'+esc(profil.nom)+'" placeholder="'+(profil.type==="entreprise"?"Ex : Atelier Lumière SAS":"Ex : Jean Dupont")+'"/></div>';
-    html += '  <div class="field"><span class="field-label">Présentation de votre activité</span><textarea name="presentation" placeholder="'+(profil.type==="entreprise"?"Qui vous êtes, vos produits, votre marché…":"Votre parcours, vos secteurs, votre zone de chalandise…")+'">'+esc(profil.presentation)+'</textarea><span class="field-hint">Visible sur votre profil public, accessible depuis vos annonces.</span></div>';
+    html += '  <div class="field"><span class="field-label">'+tr('my_name')+'</span><input name="nom" value="'+esc(profil.nom)+'" placeholder="'+(profil.type==="entreprise"?"Ex : Atelier Lumière SAS":"Ex : Jean Dupont")+'"/></div>';
+    html += '  <div class="field"><span class="field-label">'+tr('my_presentation')+'</span><textarea name="presentation" placeholder="'+(profil.type==="entreprise"?tr('ph_presentation_ent'):tr('ph_presentation_agt'))+'">'+esc(profil.presentation)+'</textarea><span class="field-hint">'+tr('presentation_hint')+'</span></div>';
     html += '  <div class="field-row">';
     SOCIALS.forEach(function(s){
       html += '<div class="field"><span class="field-label">'+s.label+'</span><input name="'+s.key+'" value="'+esc(profil[s.key])+'" placeholder="'+s.ph+'"/></div>';
     });
     html += '  </div>';
-    html += '  <div><button class="btn accent" type="submit">Enregistrer mes informations</button></div>';
+    html += '  <div><button class="btn accent" type="submit">'+tr('save_info')+'</button></div>';
     html += '</form>';
 
-    html += '<div class="section-head"><div><h2 style="font-size:17px;">Mes annonces ('+myAds.length+')</h2></div><span class="link-more" data-action="goto" data-view="post">+ Nouvelle annonce</span></div>';
+    html += '<div class="section-head"><div><h2 style="font-size:17px;">'+tr('my_ads')+' ('+myAds.length+')</h2></div><span class="link-more" data-action="goto" data-view="post">'+tr('new_ad')+'</span></div>';
     if(myAds.length===0){
-      html += '<div class="empty"><strong>Aucune annonce publiée avec ce compte pour l\'instant.</strong></div>';
+      html += '<div class="empty"><strong>'+tr('no_ads_yet')+'</strong></div>';
     } else {
       html += '<div class="ad-grid">' + myAds.map(function(a){
         var exp = isExpired(a);
         return '<div class="ad-card" style="cursor:default;">'+
           '<div style="flex:1;min-width:0;cursor:pointer;" data-action="goto-detail" data-id="'+a.id+'">'+
             '<div class="ref mono">'+a.ref+'</div><h4 style="cursor:pointer;" data-action="goto-detail" data-id="'+a.id+'">'+esc(a.titre)+'</h4>'+
-            '<div class="ad-meta"><span>'+esc(a.secteur)+'</span><span>'+esc(a.ville)+'</span><span>'+(exp?"Expirée":"Expire dans "+daysLeft(a)+" j")+'</span></div>'+
+            '<div class="ad-meta"><span>'+esc(a.secteur)+'</span><span>'+esc(a.ville)+'</span><span>'+(exp?tr('expired_pill'):(state.lang==="en"?"Expires in "+daysLeft(a)+tr('expires_in'):"Expire dans "+daysLeft(a)+tr('expires_in')))+'</span></div>'+
           '</div>'+
           '<div class="tags" style="flex-direction:row;align-items:center;">'+
-            '<span class="pill '+(a.type==="entreprise"?"entreprise":"agent")+'">'+(a.type==="entreprise"?"Entreprise":"Agent")+'</span>'+
-            '<button class="btn sm outline" data-action="withdraw-ad" data-id="'+a.id+'">Retirer</button>'+
+            '<span class="pill '+(a.type==="entreprise"?"entreprise":"agent")+'">'+(a.type==="entreprise"?tr('opt_ent'):tr('opt_agt'))+'</span>'+
+            '<button class="btn sm outline" data-action="withdraw-ad" data-id="'+a.id+'">'+tr('withdraw')+'</button>'+
           '</div>'+
         '</div>';
       }).join("") + '</div>';
     }
 
-    html += '<div class="section-head"><div><h2 style="font-size:17px;">Mes favoris ('+favAds.length+')</h2></div></div>';
+    html += '<div class="section-head"><div><h2 style="font-size:17px;">'+tr('my_favs')+' ('+favAds.length+')</h2></div></div>';
     if(favAds.length===0){
-      html += '<div class="empty"><strong>Aucune annonce mise en favoris pour l\'instant.</strong>Cliquez sur l\'étoile ☆ d\'une annonce pour la retrouver ici.</div>';
+      html += '<div class="empty"><strong>'+tr('no_favs')+'</strong>'+tr('click_star_hint')+'</div>';
     } else {
       html += '<div class="ad-grid">' + favAds.map(adCardHtml).join("") + '</div>';
     }
 
     html += '<div class="danger-zone">';
-    html += '  <h3>Supprimer mon compte</h3>';
-    html += '  <p>Supprime définitivement votre compte, votre profil et toutes vos annonces. Action immédiate et irréversible.</p>';
-    html += '  <button class="btn sm danger" data-action="delete-account">Supprimer définitivement mon compte</button>';
+    html += '  <h3>'+tr('danger_title')+'</h3>';
+    html += '  <p>'+tr('danger_desc')+'</p>';
+    html += '  <button class="btn sm danger" data-action="delete-account">'+tr('danger_btn')+'</button>';
     html += '</div>';
 
     html += '</div>';
@@ -931,15 +1066,15 @@
   function renderProfileView(userId){
     var profil = state.profils ? state.profils[userId] : null;
     if(!profil){
-      return '<div class="empty" style="margin-top:26px;"><strong>Ce profil est introuvable.</strong><div style="margin-top:12px;"><span class="back-link" style="margin:0;justify-content:center;" data-action="goto" data-view="browse">← Retour aux annonces</span></div></div>';
+      return '<div class="empty" style="margin-top:26px;"><strong>'+tr('profile_not_found')+'</strong><div style="margin-top:12px;"><span class="back-link" style="margin:0;justify-content:center;" data-action="goto" data-view="browse">'+tr('back_to_ads')+'</span></div></div>';
     }
     var ads = (state.ads||[]).filter(function(a){ return a.userId===userId && !isExpired(a); })
       .sort(function(a,b){ return new Date(b.createdAt)-new Date(a.createdAt); });
     var socialLinks = SOCIALS.filter(function(s){ return profil[s.key]; });
 
-    var html = '<span class="back-link" data-action="goto" data-view="browse">← Retour aux annonces</span>';
+    var html = '<span class="back-link" data-action="goto" data-view="browse">'+tr('back_to_ads')+'</span>';
     html += '<div class="fiche">';
-    html += '  <div class="fiche-head"><div><span class="pill '+(profil.type==="entreprise"?"entreprise":"agent")+'">'+(profil.type==="entreprise"?"Entreprise":"Agent")+'</span><h2>'+esc(profil.nom || "Profil sans nom")+'</h2></div></div>';
+    html += '  <div class="fiche-head"><div><span class="pill '+(profil.type==="entreprise"?"entreprise":"agent")+'">'+(profil.type==="entreprise"?tr('opt_ent'):tr('opt_agt'))+'</span><h2>'+esc(profil.nom || tr('no_name'))+'</h2></div></div>';
     if(profil.presentation){
       html += '  <div class="fiche-desc" style="border-top:none;padding-top:0;">'+esc(profil.presentation)+'</div>';
     }
@@ -952,9 +1087,9 @@
     }
     html += '</div>';
 
-    html += '<div class="section-head" style="margin-top:34px;"><div><h2 style="font-size:17px;">Annonces actives ('+ads.length+')</h2></div></div>';
+    html += '<div class="section-head" style="margin-top:34px;"><div><h2 style="font-size:17px;">'+tr('active_ads')+' ('+ads.length+')</h2></div></div>';
     if(ads.length===0){
-      html += '<div class="empty"><strong>Aucune annonce active pour l\'instant.</strong></div>';
+      html += '<div class="empty"><strong>'+(state.lang==="en"?"No active listing yet.":"Aucune annonce active pour l\'instant.")+'</strong></div>';
     } else {
       html += '<div class="ad-grid">' + ads.map(adCardHtml).join("") + '</div>';
     }
@@ -964,11 +1099,11 @@
   /* ---------- RENDER: NOUVEAU MOT DE PASSE ---------- */
   function renderResetPassword(){
     var html = '<div class="post-page" style="padding-top:26px;">';
-    html += '<div class="section-head" style="margin-top:0;"><div><h2>Choisir un nouveau mot de passe</h2><p>Vous arrivez depuis le lien reçu par email.</p></div></div>';
+    html += '<div class="section-head" style="margin-top:0;"><div><h2>'+tr('reset_pwd_title')+'</h2><p>'+tr('reset_pwd_sub')+'</p></div></div>';
     html += '<form class="card-form" data-form="reset-password">';
-    html += '  <div class="field"><span class="field-label">Nouveau mot de passe</span><input required type="password" name="password" minlength="6" placeholder="6 caractères minimum"/></div>';
-    html += '  <div class="field"><span class="field-label">Confirmer le mot de passe</span><input required type="password" name="password2" minlength="6" placeholder="Retapez le même mot de passe"/></div>';
-    html += '  <div><button class="btn accent" type="submit">Enregistrer le nouveau mot de passe</button></div>';
+    html += '  <div class="field"><span class="field-label">'+tr('new_pwd')+'</span><input required type="password" name="password" minlength="6" placeholder="'+tr('pwd_hint')+'"/></div>';
+    html += '  <div class="field"><span class="field-label">'+tr('confirm_pwd')+'</span><input required type="password" name="password2" minlength="6" placeholder="'+tr('confirm_pwd_ph')+'"/></div>';
+    html += '  <div><button class="btn accent" type="submit">'+tr('save_new_pwd')+'</button></div>';
     html += '</form></div>';
     return html;
   }
@@ -979,6 +1114,9 @@
     html += '<h2>Mentions légales &amp; confidentialité</h2>';
     html += '<p class="legal-updated">Dernière mise à jour : ' + new Date().toLocaleDateString("fr-FR") + '</p>';
 
+    if(state.lang==="en"){
+      html += '<div class="legal-note"><b>Note:</b> '+tr('legal_en_notice')+'</div>';
+    }
     html += '<div class="legal-note">Les zones en <span class="legal-fill">surbrillance</span> sont des informations à compléter par l\'éditeur du site avant sa mise en ligne. Ce texte est un modèle de départ, pas un avis juridique — faites-le relire pour une couverture juridique complète.</div>';
 
     html += '<div class="legal-block"><h3>1. Éditeur du site</h3><p>Le site AgentZone est édité par <span class="legal-fill">[Nom / raison sociale]</span>, <span class="legal-fill">[statut juridique, ex. auto-entrepreneur, SASU…]</span>, immatriculé sous le numéro SIRET <span class="legal-fill">[n° SIRET]</span>, dont le siège est situé <span class="legal-fill">[adresse complète]</span>. Directeur de la publication : <span class="legal-fill">[Nom]</span>. Contact : <span class="legal-fill">[email de contact]</span>.</p></div>';
@@ -1035,8 +1173,24 @@
 
     root.innerHTML = out;
     document.querySelectorAll(".navlink[data-nav]").forEach(function(n){ n.classList.toggle("active", n.getAttribute("data-nav")===state.view); });
+    applyStaticI18n();
     if(state.view==="home"){ setTimeout(initHomeMap, 0); }
     state.flash = ""; state.error = "";
+  }
+
+  function applyStaticI18n(){
+    document.querySelectorAll("[data-i18n]").forEach(function(el){
+      el.innerHTML = tr(el.getAttribute("data-i18n"));
+    });
+    document.querySelectorAll(".lang-opt").forEach(function(el){
+      el.classList.toggle("on", el.getAttribute("data-lang")===state.lang);
+    });
+    document.documentElement.lang = state.lang;
+  }
+  function setLang(lang){
+    state.lang = lang;
+    try{ localStorage.setItem("agentzone_lang", lang); }catch(e){}
+    renderView();
   }
 
   function goto(view, id){ state.view = view; state.activeId = id || null; renderView(); window.scrollTo({top:0, behavior:"smooth"}); }
@@ -1061,6 +1215,7 @@
     else if(action==="reset-browse-filters"){ state.browseFilters = { type:"tous", secteur:"", zone:"", mode:"tous", commission:"tous", q:"" }; renderView(); }
     else if(action==="home-search"){ var v = document.getElementById("home-q"); state.browseFilters.q = v?v.value:""; goto("browse"); }
     else if(action==="set-auth-mode"){ state.authMode = t.getAttribute("data-mode"); renderView(); }
+    else if(action==="set-lang"){ setLang(t.getAttribute("data-lang")); }
     else if(action==="cookies-accept"){ acceptCookies(); }
     else if(action==="cookies-decline"){ declineCookies(); }
     else if(action==="cookies-reset"){
@@ -1108,9 +1263,11 @@
     }
   });
 
+  var NO_LIVE_UPDATE_ON_INPUT = { "browse-zone":true, "browse-q":true, "map-loc":true };
   document.addEventListener("input", function(e){
     var key = e.target.getAttribute && e.target.getAttribute("data-filter");
     if(!key || !FILTER_MAP[key]) return;
+    if(NO_LIVE_UPDATE_ON_INPUT[key]) return; /* appliqué au blur, à Entrée, ou via une suggestion */
     var path = FILTER_MAP[key];
     state[path[0]][path[1]] = e.target.value;
     if(path[0]==="browseFilters") savePreferencesCookie();
@@ -1128,6 +1285,61 @@
     if(e.target && e.target.getAttribute && e.target.getAttribute("data-filter")==="home-q" && e.key==="Enter"){
       state.browseFilters.q = e.target.value; goto("browse");
     }
+    var key = e.target && e.target.getAttribute && e.target.getAttribute("data-filter");
+    if(key && NO_LIVE_UPDATE_ON_INPUT[key] && e.key==="Enter"){
+      e.preventDefault();
+      var path = FILTER_MAP[key];
+      state[path[0]][path[1]] = e.target.value;
+      if(path[0]==="browseFilters") savePreferencesCookie();
+      if(path[0]==="mapFilters") updateMapMarkers(); else renderView();
+    }
+  });
+
+  /* ---------- AUTOCOMPLÉTION VILLE (API officielle du gouvernement, gratuite, sans clé) ---------- */
+  var acTimer = null;
+  document.addEventListener("input", function(e){
+    var input = e.target;
+    if(!input.getAttribute || input.getAttribute("data-autocomplete") !== "commune") return;
+    var wrap = input.closest(".ac-wrap");
+    var listEl = wrap ? wrap.querySelector("[data-ac-list]") : null;
+    if(!listEl) return;
+    var q = input.value.trim();
+    clearTimeout(acTimer);
+    if(q.length < 2){ listEl.innerHTML = ""; listEl.style.display = "none"; return; }
+    acTimer = setTimeout(async function(){
+      try{
+        var url = "https://geo.api.gouv.fr/communes?nom=" + encodeURIComponent(q) + "&fields=nom,codesPostaux&boost=population&limit=8";
+        var res = await fetch(url);
+        var data = await res.json();
+        if(!data || !data.length){ listEl.innerHTML = ""; listEl.style.display = "none"; return; }
+        listEl.innerHTML = data.map(function(c){
+          var cp = (c.codesPostaux && c.codesPostaux[0]) || "";
+          var label = c.nom + (cp ? " (" + cp + ")" : "");
+          return '<div class="ac-item" data-ac-value="'+esc(c.nom)+'">'+esc(label)+'</div>';
+        }).join("");
+        listEl.style.display = "block";
+      }catch(err){ listEl.innerHTML = ""; listEl.style.display = "none"; }
+    }, 300);
+  });
+  document.addEventListener("click", function(e){
+    var item = e.target.closest(".ac-item");
+    if(item){
+      var wrap = item.closest(".ac-wrap");
+      var input = wrap ? wrap.querySelector("input") : null;
+      var list = wrap ? wrap.querySelector("[data-ac-list]") : null;
+      if(input){
+        input.value = item.getAttribute("data-ac-value");
+        input.dispatchEvent(new Event("change", { bubbles:true }));
+      }
+      if(list){ list.innerHTML = ""; list.style.display = "none"; }
+      return;
+    }
+    document.querySelectorAll(".ac-wrap").forEach(function(w){
+      if(!w.contains(e.target)){
+        var l = w.querySelector("[data-ac-list]");
+        if(l) l.style.display = "none";
+      }
+    });
   });
 
   document.addEventListener("submit", async function(e){
