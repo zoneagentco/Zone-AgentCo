@@ -64,6 +64,14 @@
   .lang-opt:hover{ color:var(--ink); background:var(--surface-2); }
   .lang-opt.on{ color:var(--primary); font-weight:700; }
   .lang-sep{ color:var(--border); }
+  .unread-badge{ display:inline-flex; align-items:center; justify-content:center; min-width:16px; height:16px; padding:0 4px; margin-left:5px; border-radius:999px; background:var(--accent); color:#fff; font-size:10px; font-weight:700; }
+  .thread{ display:flex; flex-direction:column; gap:12px; margin:20px 0; max-height:420px; overflow-y:auto; }
+  .msg{ max-width:75%; align-self:flex-start; }
+  .msg.mine{ align-self:flex-end; }
+  .msg-bubble{ background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius); padding:10px 14px; font-size:14px; white-space:pre-wrap; }
+  .msg.mine .msg-bubble{ background:var(--primary-soft); border-color:#C9D9EB; }
+  .msg-meta{ font-size:11px; color:var(--ink-soft); margin-top:4px; }
+  .msg.mine .msg-meta{ text-align:right; }
 
   .btn{ display:inline-flex; align-items:center; gap:8px; justify-content:center; font-size:13.5px; font-weight:600; padding:12px 20px; border-radius:var(--radius-sm); border:none; background:var(--primary); color:#fff; cursor:pointer; transition:.15s ease; }
   .btn:hover{ background:var(--primary-dark); transform:translateY(-1px); }
@@ -256,6 +264,7 @@
         <span class="navlink" data-nav="home" data-action="goto" data-view="home" data-i18n="nav_home">Accueil</span>
         <span class="navlink" data-nav="browse" data-action="goto" data-view="browse" data-i18n="nav_browse">Annonces</span>
         <span class="navlink" data-nav="account" data-action="goto" data-view="account" data-i18n="nav_account">Mon compte</span>
+        <span class="navlink" data-nav="messages" data-action="goto" data-view="messages"><span data-i18n="nav_messages">Messages</span><span id="unread-badge" class="unread-badge" style="display:none;"></span></span>
         <span class="navlink cta" data-action="goto" data-view="post" data-i18n="nav_post">Déposer une annonce</span>
         <span class="lang-toggle">
           <span class="lang-opt" data-action="set-lang" data-lang="fr">FR</span><span class="lang-sep">/</span><span class="lang-opt" data-action="set-lang" data-lang="en">EN</span>
@@ -318,7 +327,7 @@
   var I18N = {
     fr: {
       tagline: "Entreprises &amp; agents commerciaux",
-      nav_home: "Accueil", nav_browse: "Annonces", nav_account: "Mon compte", nav_post: "Déposer une annonce",
+      nav_home: "Accueil", nav_browse: "Annonces", nav_account: "Mon compte", nav_messages: "Messages", nav_post: "Déposer une annonce",
       hero_h1: "Le point de rendez-vous des agents commerciaux et des entreprises.",
       hero_lead: "Une entreprise cherche un agent pour porter ses produits sur un secteur. Un agent cherche une entreprise à représenter. Ici, ils se trouvent — sans intermédiaire, sans abonnement, sans fichier client à remplir.",
       pitch_a_title: "Je suis une entreprise", pitch_a_desc: "Je cherche un agent commercial pour représenter mes produits sur un secteur.",
@@ -350,8 +359,12 @@
       my_favs: "Mes favoris", no_favs: "Aucune annonce mise en favoris pour l'instant.",
       danger_title: "Supprimer mon compte", danger_desc: "Supprime définitivement votre compte, votre profil et toutes vos annonces. Action immédiate et irréversible.",
       danger_btn: "Supprimer définitivement mon compte",
-      contact_title: "Contacter", contact_note: "Message envoyé directement depuis votre messagerie — aucune donnée n'est conservée sur ce site.",
-      contact_name: "Votre nom", contact_email: "Votre email", contact_msg: "Votre message", contact_send: "Envoyer le message",
+      contact_title: "Contacter", contact_note: "Envoyez un message directement sur AgentZone — vous recevrez une copie par email, ainsi qu'une notification quand on vous répond.",
+      contact_login_needed: "Connectez-vous pour contacter l'auteur de cette annonce.",
+      contact_msg: "Votre message", contact_send: "Envoyer le message", message_sent_ok: "Message envoyé ! Vous recevrez une copie par email, et une notification à la réponse.",
+      messages_title: "Messages", messages_sub: "Vos échanges avec les entreprises et agents contactés.",
+      no_conversations: "Aucune conversation pour l'instant.",
+      about_ad: "à propos de", you: "Vous", reply_ph: "Écrire une réponse…", send: "Envoyer", back_to_messages: "← Retour aux messages",
       footer_legal: "Mentions légales &amp; confidentialité (RGPD)",
       cookie_text: "Ce site utilise un cookie pour retenir vos préférences de recherche (type d'annonce, secteur, mode) d'une visite à l'autre. Aucune publicité, aucun cookie de mesure d'audience ou de suivi publicitaire.",
       cookie_decline: "Refuser", cookie_accept: "Accepter",
@@ -377,7 +390,7 @@
     },
     en: {
       tagline: "Companies &amp; independent sales reps",
-      nav_home: "Home", nav_browse: "Listings", nav_account: "My account", nav_post: "Post a listing",
+      nav_home: "Home", nav_browse: "Listings", nav_account: "My account", nav_messages: "Messages", nav_post: "Post a listing",
       hero_h1: "Where independent sales reps and companies meet.",
       hero_lead: "A company is looking for a rep to carry its products in a given sector. A rep is looking for a company to represent. Here, they find each other — no middleman, no subscription, no client database to fill in.",
       pitch_a_title: "I'm a company", pitch_a_desc: "I'm looking for a sales rep to represent my products in a sector.",
@@ -409,8 +422,12 @@
       my_favs: "My favourites", no_favs: "No listing saved as favourite yet.",
       danger_title: "Delete my account", danger_desc: "Permanently deletes your account, profile and all your listings. Immediate and irreversible.",
       danger_btn: "Permanently delete my account",
-      contact_title: "Contact", contact_note: "Message sent directly from your own mailbox — no data is stored on this site.",
-      contact_name: "Your name", contact_email: "Your email", contact_msg: "Your message", contact_send: "Send message",
+      contact_title: "Contact", contact_note: "Send a message directly on AgentZone — you'll get a copy by email, and a notification when you get a reply.",
+      contact_login_needed: "Log in to contact the author of this listing.",
+      contact_msg: "Your message", contact_send: "Send message", message_sent_ok: "Message sent! You'll receive a copy by email, and a notification on reply.",
+      messages_title: "Messages", messages_sub: "Your exchanges with contacted companies and reps.",
+      no_conversations: "No conversation yet.",
+      about_ad: "about", you: "You", reply_ph: "Write a reply…", send: "Send", back_to_messages: "← Back to messages",
       footer_legal: "Legal notice &amp; privacy (GDPR)",
       cookie_text: "This site uses a cookie to remember your search preferences (listing type, sector, mode) between visits. No advertising, no audience-measurement or tracking cookies.",
       cookie_decline: "Decline", cookie_accept: "Accept",
@@ -479,7 +496,9 @@
     authMode: "login",     /* "login" ou "signup", pour l'écran Mon compte */
     profils: null,          /* { "user-id": {userId,email,type,nom,site,linkedin,...} } */
     favoris: {},              /* { "ad-id": true } — favoris de l'utilisateur connecté */
-    lang: (function(){ try{ return localStorage.getItem("agentzone_lang") || "fr"; }catch(e){ return "fr"; } })()
+    lang: (function(){ try{ return localStorage.getItem("agentzone_lang") || "fr"; }catch(e){ return "fr"; } })(),
+    messages: [],
+    activeConvo: null /* { other, adId } — conversation ouverte dans la messagerie */
   };
 
   var homeMap = null, homeMarkers = null;
@@ -636,6 +655,63 @@
       }
       renderView();
     }catch(e){ state.error = "L'action sur les favoris a échoué, réessayez."; renderView(); }
+  }
+
+  /* ---------- MESSAGERIE ---------- */
+  async function loadMessages(){
+    if(!supa || !state.user){ state.messages = []; return; }
+    try{
+      var res = await supa.from("messages").select("*").order("created_at", { ascending:true });
+      if(res.error) throw res.error;
+      state.messages = res.data || [];
+    }catch(e){ state.messages = []; }
+  }
+  function updateUnreadBadge(){
+    var badge = document.getElementById("unread-badge");
+    if(!badge) return;
+    var n = (state.messages||[]).filter(function(m){ return m.recipient_id===((state.user||{}).id) && !m.read_at; }).length;
+    if(n>0){ badge.textContent = n>9?"9+":String(n); badge.style.display="inline-flex"; }
+    else{ badge.style.display="none"; }
+  }
+  function conversationsList(){
+    if(!state.user) return [];
+    var byKey = {};
+    (state.messages||[]).forEach(function(m){
+      var other = m.sender_id===state.user.id ? m.recipient_id : m.sender_id;
+      var key = other + "|" + (m.ad_id||"none");
+      if(!byKey[key]) byKey[key] = { other:other, adId:m.ad_id, msgs:[] };
+      byKey[key].msgs.push(m);
+    });
+    return Object.keys(byKey).map(function(k){
+      var c = byKey[k];
+      c.msgs.sort(function(a,b){ return new Date(a.created_at)-new Date(b.created_at); });
+      c.last = c.msgs[c.msgs.length-1];
+      c.unread = c.msgs.filter(function(m){ return m.recipient_id===state.user.id && !m.read_at; }).length;
+      return c;
+    }).sort(function(a,b){ return new Date(b.last.created_at)-new Date(a.last.created_at); });
+  }
+  async function sendMessage(recipientId, adId, body){
+    if(!supa || !state.user) return { ok:false, message:"Connectez-vous pour envoyer un message." };
+    try{
+      var res = await supa.from("messages").insert([{ sender_id: state.user.id, recipient_id: recipientId, ad_id: adId||null, body: body }]).select().single();
+      if(res.error) throw res.error;
+      state.messages.push(res.data);
+      return { ok:true };
+    }catch(e){ return { ok:false, message: e.message || "L'envoi a échoué." }; }
+  }
+  async function markConversationRead(otherId, adId){
+    if(!supa || !state.user) return;
+    var toMark = (state.messages||[]).filter(function(m){
+      return m.recipient_id===state.user.id && m.sender_id===otherId && (m.ad_id||"none")===(adId||"none") && !m.read_at;
+    });
+    if(!toMark.length) return;
+    toMark.forEach(function(m){ m.read_at = new Date().toISOString(); });
+    try{
+      var q = supa.from("messages").update({ read_at: new Date().toISOString() })
+        .eq("sender_id", otherId).eq("recipient_id", state.user.id).is("read_at", null);
+      q = adId ? q.eq("ad_id", adId) : q.is("ad_id", null);
+      await q;
+    }catch(e){}
   }
   async function upsertProfilFromAd(ad){
     if(!state.user || !state.profils) return;
@@ -925,13 +1001,20 @@
 
     if(expired){
       html += '<div class="empty"><strong>'+tr('expired_title')+'</strong>'+(ad.type==="entreprise"?tr('expired_note_ent'):tr('expired_note_agt'))+'</div>';
+    } else if(state.user && ad.userId===state.user.id){
+      /* on ne peut pas se contacter soi-même */
+    } else if(!state.user){
+      html += '<div class="contact-box">';
+      html += '  <h3>'+(ad.type==="entreprise"?tr('contact_ent'):tr('contact_agt'))+'</h3>';
+      html += '  <p class="note">'+tr('contact_login_needed')+'</p>';
+      html += '  <span class="btn accent" data-action="goto" data-view="account">'+tr('login_or_signup')+'</span>';
+      html += '</div>';
     } else {
       html += '<div class="contact-box">';
       html += '  <h3>'+(ad.type==="entreprise"?tr('contact_ent'):tr('contact_agt'))+'</h3>';
       html += '  <p class="note">'+tr('contact_note')+'</p>';
-      html += '  <div id="contact-sent" style="display:none;align-items:center;gap:8px;font-size:14px;"><span style="color:var(--teal);">✓</span> '+(state.lang==="en"?"Your mailbox opened with the message pre-filled. All that's left is to send it.":"Votre messagerie s\'est ouverte avec le message pré-rempli. Il ne reste qu\'à l\'envoyer.")+'</div>';
-      html += '  <form class="card-form" data-form="contact" data-ad-id="'+ad.id+'">';
-      html += '    <div class="field-row"><div class="field"><span class="field-label">'+tr('contact_name')+'</span><input required name="name" placeholder="Jean Dupont"/></div><div class="field"><span class="field-label">'+tr('contact_email')+'</span><input required type="email" name="email" placeholder="jean@exemple.fr"/></div></div>';
+      html += '  <div id="contact-sent" style="display:none;align-items:center;gap:8px;font-size:14px;"><span style="color:var(--teal);">✓</span> '+tr('message_sent_ok')+'</div>';
+      html += '  <form class="card-form" data-form="contact" data-ad-id="'+ad.id+'" data-recipient-id="'+ad.userId+'">';
       html += '    <div class="field"><span class="field-label">'+tr('contact_msg')+'</span><textarea required name="message" placeholder="'+(state.lang==="en"?"Hello, I'm interested in your listing…":"Bonjour, votre annonce m\'intéresse…")+'"></textarea></div>';
       html += '    <div><button class="btn accent" type="submit">'+tr('contact_send')+'</button></div>';
       html += '  </form></div>';
@@ -1108,6 +1191,67 @@
     return html;
   }
 
+  /* ---------- RENDER: MESSAGERIE ---------- */
+  function renderMessages(){
+    var html = '<div class="post-page" style="padding-top:26px;">';
+    html += '<div class="section-head" style="margin-top:0;"><div><h2>'+tr('messages_title')+'</h2><p>'+tr('messages_sub')+'</p></div></div>';
+
+    if(!state.user){
+      html += '<div class="empty"><strong>'+tr('need_login')+'</strong>'+
+        '<div style="margin-top:16px;"><span class="btn accent" data-action="goto" data-view="account">'+tr('login_or_signup')+'</span></div></div></div>';
+      return html;
+    }
+
+    var convos = conversationsList();
+
+    if(state.activeConvo){
+      var other = state.activeConvo.other, adId = state.activeConvo.adId;
+      var thread = (state.messages||[]).filter(function(m){
+        return (m.sender_id===other||m.recipient_id===other) && (m.ad_id||"none")===(adId||"none");
+      }).sort(function(a,b){ return new Date(a.created_at)-new Date(b.created_at); });
+      var ad = adId ? (state.ads||[]).find(function(a){ return a.id===adId; }) : null;
+      var profil = state.profils ? state.profils[other] : null;
+      var name = (profil && profil.nom) ? profil.nom : (profil && profil.email) || "—";
+
+      html += '<span class="back-link" data-action="close-convo">'+tr('back_to_messages')+'</span>';
+      html += '<div class="fiche">';
+      html += '  <div class="fiche-head"><div><h2>'+esc(name)+'</h2>'+(ad?'<p style="color:var(--ink-soft);font-size:13px;margin-top:4px;">'+tr('about_ad')+' « '+esc(ad.titre)+' »</p>':'')+'</div></div>';
+      html += '  <div class="thread">';
+      thread.forEach(function(m){
+        var mine = m.sender_id===state.user.id;
+        html += '<div class="msg'+(mine?" mine":"")+'"><div class="msg-bubble">'+esc(m.body)+'</div><div class="msg-meta">'+(mine?tr('you'):esc(name))+' · '+timeAgo(m.created_at)+'</div></div>';
+      });
+      html += '  </div>';
+      html += '  <form class="card-form" data-form="reply" data-other-id="'+other+'" data-ad-id="'+(adId||"")+'" style="margin-top:18px;">';
+      html += '    <textarea required name="body" placeholder="'+tr('reply_ph')+'"></textarea>';
+      html += '    <div><button class="btn accent" type="submit">'+tr('send')+'</button></div>';
+      html += '  </form>';
+      html += '</div></div>';
+      return html;
+    }
+
+    if(convos.length===0){
+      html += '<div class="empty"><strong>'+tr('no_conversations')+'</strong></div></div>';
+      return html;
+    }
+
+    html += '<div class="ad-grid">';
+    convos.forEach(function(c){
+      var profil = state.profils ? state.profils[c.other] : null;
+      var name = (profil && profil.nom) ? profil.nom : (profil && profil.email) || "—";
+      var ad = c.adId ? (state.ads||[]).find(function(a){ return a.id===c.adId; }) : null;
+      html += '<div class="ad-card" data-action="open-convo" data-other-id="'+c.other+'" data-ad-id="'+(c.adId||"")+'">'+
+        '<div style="flex:1;min-width:0;">'+
+          '<h4>'+esc(name)+(ad?' — '+esc(ad.titre):'')+'</h4>'+
+          '<div class="ad-meta"><span>'+esc(c.last.body.slice(0,80))+(c.last.body.length>80?"…":"")+'</span><span>'+timeAgo(c.last.created_at)+'</span></div>'+
+        '</div>'+
+        (c.unread>0?'<div class="tags"><span class="unread-badge" style="position:static;">'+c.unread+'</span></div>':'')+
+      '</div>';
+    });
+    html += '</div></div>';
+    return html;
+  }
+
   /* ---------- RENDER: MENTIONS LÉGALES ---------- */
   function renderLegal(){
     var html = '<div class="legal-page">';
@@ -1168,6 +1312,7 @@
     else if(state.view==="post") out += renderPost();
     else if(state.view==="legal") out += renderLegal();
     else if(state.view==="account") out += renderAccount();
+    else if(state.view==="messages") out += renderMessages();
     else if(state.view==="profile") out += renderProfileView(state.activeId);
     else if(state.view==="reset-password") out += renderResetPassword();
 
@@ -1186,6 +1331,7 @@
       el.classList.toggle("on", el.getAttribute("data-lang")===state.lang);
     });
     document.documentElement.lang = state.lang;
+    updateUnreadBadge();
   }
   function setLang(lang){
     state.lang = lang;
@@ -1233,7 +1379,7 @@
       else{ state.error = res.message; }
       renderView();
     }
-    else if(action==="logout"){ await signOutUser(); state.favoris = {}; renderView(); }
+    else if(action==="logout"){ await signOutUser(); state.favoris = {}; state.messages = []; renderView(); }
     else if(action==="delete-account"){
       var sure = false;
       try{ sure = window.confirm("Supprimer définitivement votre compte, votre profil et toutes vos annonces ? Cette action est immédiate et irréversible."); }catch(err){}
@@ -1248,6 +1394,14 @@
       state.profils[state.user.id].type = t.getAttribute("data-type");
       renderView();
     }
+    else if(action==="open-convo"){
+      var otherId = t.getAttribute("data-other-id");
+      var cAdId = t.getAttribute("data-ad-id") || null;
+      state.activeConvo = { other: otherId, adId: cAdId };
+      await markConversationRead(otherId, cAdId);
+      renderView();
+    }
+    else if(action==="close-convo"){ state.activeConvo = null; renderView(); }
     else if(action==="toggle-favori"){
       e.preventDefault();
       await toggleFavori(t.getAttribute("data-id"));
@@ -1372,13 +1526,32 @@
     else if(form.getAttribute && form.getAttribute("data-form")==="contact"){
       e.preventDefault();
       var adId = form.getAttribute("data-ad-id");
+      var recipientId = form.getAttribute("data-recipient-id");
       var ad = (state.ads||[]).find(function(a){ return a.id===adId; });
-      if(!ad) return;
-      var subject = encodeURIComponent("Contact suite à votre annonce " + ad.ref + " — AgentZone");
-      var body = encodeURIComponent("Bonjour,\n\n" + form.message.value + "\n\n— " + form.name.value + (form.email.value ? " (" + form.email.value + ")" : "") + "\n\nEn réponse à l'annonce \"" + ad.titre + "\" (" + ad.ref + ").");
-      window.location.href = "mailto:" + ad.contactEmail + "?subject=" + subject + "&body=" + body;
-      var sent = document.getElementById("contact-sent");
-      if(sent){ sent.style.display = "flex"; form.style.display = "none"; }
+      if(!ad || !recipientId) return;
+      var btn = form.querySelector("button[type=submit]");
+      var original = btn.innerHTML;
+      btn.disabled = true; btn.innerHTML = '<span class="spin"></span>';
+      var res = await sendMessage(recipientId, adId, form.message.value.trim());
+      btn.disabled = false; btn.innerHTML = original;
+      if(res.ok){
+        var sent = document.getElementById("contact-sent");
+        if(sent){ sent.style.display = "flex"; form.style.display = "none"; }
+        applyStaticI18n();
+      } else { state.error = res.message; renderView(); }
+    }
+    else if(form.getAttribute && form.getAttribute("data-form")==="reply"){
+      e.preventDefault();
+      var otherId = form.getAttribute("data-other-id");
+      var replyAdId = form.getAttribute("data-ad-id") || null;
+      var body = form.body.value.trim();
+      if(!body) return;
+      var btn = form.querySelector("button[type=submit]");
+      btn.disabled = true;
+      var res = await sendMessage(otherId, replyAdId, body);
+      btn.disabled = false;
+      if(res.ok){ form.body.value = ""; renderView(); }
+      else{ state.error = res.message; renderView(); }
     }
     else if(form.getAttribute && form.getAttribute("data-form")==="account-login"){
       e.preventDefault();
@@ -1387,7 +1560,7 @@
       btn.disabled = true; btn.innerHTML = '<span class="spin"></span> Connexion…';
       var res = await signIn(form.email.value.trim(), form.password.value);
       btn.disabled = false; btn.innerHTML = original;
-      if(!res.ok){ state.error = res.message; } else { await loadFavoris(); }
+      if(!res.ok){ state.error = res.message; } else { await loadFavoris(); await loadMessages(); }
       renderView();
     }
     else if(form.getAttribute && form.getAttribute("data-form")==="account-signup"){
@@ -1441,7 +1614,7 @@
   async function init(){
     loadPreferencesCookie();
     await Promise.all([loadAds(), loadProfils(), loadUser()]);
-    if(state.user) await loadFavoris();
+    if(state.user){ await loadFavoris(); await loadMessages(); }
     if(supa){
       supa.auth.onAuthStateChange(function(event, session){
         if(event === "PASSWORD_RECOVERY"){
